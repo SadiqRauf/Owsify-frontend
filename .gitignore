@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Local env overrides. .env holds shared dev defaults and is committed.
+.env.local
+.env.*.local
+
+.DS_Store
+*.log
+npm-debug.log*
+.eslintcache
