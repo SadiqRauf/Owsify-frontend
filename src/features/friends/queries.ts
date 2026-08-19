@@ -73,7 +73,7 @@ export function useInvitations() {
 
 /** Narrower than useFriendMutation: an invite cannot change search results or the
  *  friend list, and refetching the search would unmount the panel mid-flow. */
-function useInvitationMutation<TArgs>(fn: (args: TArgs) => Promise<unknown>) {
+function useInvitationMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: fn,

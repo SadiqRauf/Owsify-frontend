@@ -45,16 +45,64 @@ export const queryKeys = {
     list: (params: { groupId?: string; offset?: number }) =>
       ['expenses', 'list', params.groupId ?? 'all', params.offset ?? 0] as const,
     detail: (expenseId: string) => ['expenses', 'detail', expenseId] as const,
-    balances: (groupId?: string) => ['expenses', 'balances', groupId ?? 'all'] as const,
+  },
+  balances: {
+    all: ['balances'] as const,
+    overview: ['balances', 'overview'] as const,
+    group: (groupId: string) => ['balances', 'group', groupId] as const,
+    simplified: (groupId: string) => ['balances', 'simplified', groupId] as const,
+    withUser: (userId: string, groupId?: string) =>
+      ['balances', 'with', userId, groupId ?? 'all'] as const,
+  },
+  settlements: {
+    all: ['settlements'] as const,
+    list: (params: { groupId?: string; withUserId?: string; offset?: number; sort?: string }) =>
+      [
+        'settlements',
+        'list',
+        params.groupId ?? 'all',
+        params.withUserId ?? 'all',
+        params.sort ?? '-settled_on',
+        params.offset ?? 0,
+      ] as const,
+  },
+  activity: {
+    all: ['activity'] as const,
+    list: (params: {
+      groupId?: string
+      withUserId?: string
+      type?: string
+      order?: string
+      offset?: number
+    }) =>
+      [
+        'activity',
+        'list',
+        params.groupId ?? 'all',
+        params.withUserId ?? 'all',
+        params.type ?? 'all',
+        params.order ?? 'desc',
+        params.offset ?? 0,
+      ] as const,
   },
 } as const
 
 /**
- * Anything that changes an expense also changes balances and the lists it appears
- * in, so mutations invalidate the whole expense tree rather than guessing at keys.
+ * Expenses, settlements, balances and activity are four views of the same ledger:
+ * changing any transaction changes all of them. Rather than trying to work out
+ * which keys are affected, every money mutation invalidates the whole set — a
+ * stale balance is exactly the kind of wrong that users notice and do not forgive.
  */
-export function invalidateExpenseData(groupId?: string | null) {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
+export function invalidateLedger(groupId?: string | null) {
+  for (const key of [
+    queryKeys.expenses.all,
+    queryKeys.balances.all,
+    queryKeys.settlements.all,
+    queryKeys.activity.all,
+  ]) {
+    void queryClient.invalidateQueries({ queryKey: key })
+  }
+
   if (groupId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) })
   }

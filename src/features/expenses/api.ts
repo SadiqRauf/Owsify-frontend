@@ -1,6 +1,5 @@
 import { apiClient } from '@/lib/api-client'
 import type {
-  BalanceSummary,
   Expense,
   ExpenseCategory,
   ExpenseListPage,
@@ -55,10 +54,5 @@ export const expensesApi = {
   async remove(expenseId: string): Promise<MessageResponse> {
     const { data } = await apiClient.delete<MessageResponse>(`/expenses/${expenseId}`)
     return data
-  },
-
-  async balances(params: { group_id?: string } = {}): Promise<BalanceSummary> {
-    const { data } = await apiClient.get<BalanceSummary>('/expenses/balances', { params })
-    return data
-  },
+  }
 }

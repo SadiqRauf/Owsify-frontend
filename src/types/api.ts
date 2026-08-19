@@ -158,21 +158,6 @@ export interface ExpenseListPage {
   offset: number
 }
 
-export interface BalanceEntry {
-  user: User
-  /** Positive: they owe you. Negative: you owe them. */
-  amount: string
-  currency: string
-}
-
-export interface BalanceSummary {
-  currency: string
-  total_owed_to_you: string
-  total_you_owe: string
-  net: string
-  entries: BalanceEntry[]
-}
-
 export type InvitationStatus = 'pending' | 'accepted' | 'cancelled'
 
 export interface Invitation {
@@ -190,4 +175,127 @@ export interface Invitation {
    * SMTP; `console` and `file` mean delivery is stubbed for local development.
    */
   delivery: 'email' | 'console' | 'file'
+}
+
+// --------------------------------------------------------------------------- //
+// Balances
+// --------------------------------------------------------------------------- //
+/**
+ * Balances are always reported per currency. There is deliberately no combined
+ * figure: a net across USD and EUR would be a number with no meaning.
+ */
+export interface CurrencyTotals {
+  currency: string
+  owed_to_you: string
+  you_owe: string
+  net: string
+}
+
+export interface PersonBalance {
+  user: User
+  currency: string
+  /** Positive: they owe you. Negative: you owe them. */
+  amount: string
+}
+
+export interface BalanceOverview {
+  totals: CurrencyTotals[]
+  people: PersonBalance[]
+}
+
+export interface Debt {
+  debtor: User
+  creditor: User
+  amount: string
+  currency: string
+}
+
+export interface MemberBalance {
+  user: User
+  currency: string
+  /** Positive when the group owes them. */
+  net: string
+}
+
+export interface GroupBalanceOverview {
+  group_id: string
+  currency: string
+  total_expenses: string
+  total_settled: string
+  your_share: string
+  your_net: string
+  members: MemberBalance[]
+  /** Real pairwise debts, not simplified. */
+  debts: Debt[]
+}
+
+export interface SimplifiedPlan {
+  currency: string
+  transfers: Debt[]
+  transfer_count: number
+  original_count: number
+}
+
+// --------------------------------------------------------------------------- //
+// Settlements
+// --------------------------------------------------------------------------- //
+export const PAYMENT_METHODS = [
+  'cash',
+  'bank_transfer',
+  'card',
+  'paypal',
+  'venmo',
+  'upi',
+  'other',
+] as const
+
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
+
+export interface Settlement {
+  id: string
+  group_id: string | null
+  from_user: User
+  to_user: User
+  created_by: User
+  amount: string
+  currency: string
+  settled_on: string
+  method: PaymentMethod
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SettlementListPage {
+  items: Settlement[]
+  total: number
+  limit: number
+  offset: number
+}
+
+// --------------------------------------------------------------------------- //
+// Activity
+// --------------------------------------------------------------------------- //
+export type ActivityType = 'expense' | 'settlement'
+
+export interface ActivityItem {
+  id: string
+  type: ActivityType
+  occurred_at: string
+  actor: User
+  /** A rendered sentence, e.g. "Sadiq added Dinner". */
+  summary: string
+  amount: string
+  currency: string
+  group: { id: string; name: string; emoji: string | null } | null
+  counterparty: User | null
+  /** Positive when this left you owed money, negative when owing. */
+  your_impact: string
+}
+
+export interface ActivityPage {
+  items: ActivityItem[]
+  total: number
+  limit: number
+  offset: number
 }

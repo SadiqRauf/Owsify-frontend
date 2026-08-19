@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { invalidateExpenseData, queryKeys } from '@/lib/query-client'
+import { invalidateLedger, queryKeys } from '@/lib/query-client'
 
 import { expensesApi, type ExpenseCreateInput, type ExpenseUpdateInput } from './api'
 
@@ -27,17 +27,10 @@ export function useExpense(expenseId: string | undefined) {
   })
 }
 
-export function useBalances(groupId?: string) {
-  return useQuery({
-    queryKey: queryKeys.expenses.balances(groupId),
-    queryFn: () => expensesApi.balances({ group_id: groupId }),
-  })
-}
-
 export function useCreateExpense() {
   return useMutation({
     mutationFn: (input: ExpenseCreateInput) => expensesApi.create(input),
-    onSuccess: (expense) => invalidateExpenseData(expense.group_id),
+    onSuccess: (expense) => invalidateLedger(expense.group_id),
   })
 }
 
@@ -47,7 +40,7 @@ export function useUpdateExpense(expenseId: string) {
     mutationFn: (input: ExpenseUpdateInput) => expensesApi.update(expenseId, input),
     onSuccess: (expense) => {
       queryClient.setQueryData(queryKeys.expenses.detail(expenseId), expense)
-      invalidateExpenseData(expense.group_id)
+      invalidateLedger(expense.group_id)
     },
   })
 }
@@ -59,7 +52,7 @@ export function useDeleteExpense() {
       expensesApi.remove(expenseId),
     onSuccess: (_result, { expenseId, groupId }) => {
       queryClient.removeQueries({ queryKey: queryKeys.expenses.detail(expenseId) })
-      invalidateExpenseData(groupId)
+      invalidateLedger(groupId)
     },
   })
 }

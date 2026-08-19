@@ -1,33 +1,40 @@
-import { ArrowDownLeft, ArrowUpRight, Plus, Receipt, Scale, Users } from 'lucide-react'
+import { HandCoins, Plus, Receipt, Users } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { CardSkeleton } from '@/components/feedback/Skeleton'
-import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useAuth } from '@/features/auth/use-auth'
-import { ExpenseList } from '@/features/expenses/ExpenseList'
-import { useBalances, useExpenses } from '@/features/expenses/queries'
-import { formatAbsMoney, formatMoney, toCents } from '@/lib/money'
-import { cn } from '@/lib/utils'
+import { BalanceCards } from '@/features/balances/BalanceCards'
+import { PersonBalanceRow } from '@/features/balances/BalanceList'
+import { useBalanceOverview } from '@/features/balances/queries'
+import { useFriends } from '@/features/friends/queries'
+import { ActivityFeed } from '@/features/settlements/ActivityFeed'
+import { SettleUpModal } from '@/features/settlements/SettleUpModal'
+import { useActivity } from '@/features/settlements/queries'
+import type { PersonBalance } from '@/types/api'
 
 export function DashboardPage() {
   const { user } = useAuth()
 
-  const {
-    data: balances,
-    isLoading: balancesLoading,
-    isError,
-    error,
-    refetch,
-  } = useBalances()
-  const { data: recent, isLoading: expensesLoading } = useExpenses({ limit: 5 })
+  const { data: balances, isLoading, isError, error, refetch } = useBalanceOverview()
+  const { data: activity, isLoading: activityLoading } = useActivity({ limit: 6 })
+  const { data: friends } = useFriends()
 
-  const currency = balances?.currency ?? user?.currency ?? 'USD'
+  const [settleWith, setSettleWith] = useState<PersonBalance | null>(null)
+  const [isSettleOpen, setSettleOpen] = useState(false)
+
   const firstName = (user?.full_name ?? '').split(' ')[0]
 
-  if (balancesLoading) {
+  const openSettle = (entry: PersonBalance) => {
+    setSettleWith(entry)
+    setSettleOpen(true)
+  }
+
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="skeleton h-8 w-56" />
@@ -47,31 +54,7 @@ export function DashboardPage() {
     )
   }
 
-  const net = toCents(balances?.net ?? '0')
-
-  const tiles = [
-    {
-      label: 'You are owed',
-      value: balances?.total_owed_to_you ?? '0.00',
-      icon: ArrowDownLeft,
-      tone: 'text-emerald-600 bg-emerald-50',
-      valueClass: 'text-emerald-600',
-    },
-    {
-      label: 'You owe',
-      value: balances?.total_you_owe ?? '0.00',
-      icon: ArrowUpRight,
-      tone: 'text-red-600 bg-red-50',
-      valueClass: 'text-red-600',
-    },
-    {
-      label: 'Net balance',
-      value: balances?.net ?? '0.00',
-      icon: Scale,
-      tone: 'text-brand-700 bg-brand-50',
-      valueClass: net > 0 ? 'text-emerald-600' : net < 0 ? 'text-red-600' : 'text-slate-900',
-    },
-  ]
+  const people = balances?.people ?? []
 
   return (
     <div className="space-y-6">
@@ -82,57 +65,41 @@ export function DashboardPage() {
           </h1>
           <p className="mt-1 text-sm text-slate-500">Here is where your shared money stands.</p>
         </div>
-        <Link
-          to="/expenses"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-medium text-white transition-colors hover:bg-brand-700"
-        >
-          <Plus aria-hidden className="size-4" />
-          Add expense
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSettleWith(null)
+              setSettleOpen(true)
+            }}
+            leftIcon={<HandCoins className="size-4" />}
+            disabled={(friends?.length ?? 0) === 0}
+            title={(friends?.length ?? 0) === 0 ? 'Add a friend first' : undefined}
+          >
+            Settle up
+          </Button>
+          <Link
+            to="/expenses"
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+          >
+            <Plus aria-hidden className="size-4" />
+            Add expense
+          </Link>
+        </div>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {tiles.map(({ label, value, icon: Icon, tone, valueClass }) => (
-          <div key={label} className="rounded-card bg-white p-5 shadow-sm ring-1 ring-slate-200/70">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-slate-500">{label}</p>
-              <span className={cn('flex size-8 items-center justify-center rounded-lg', tone)}>
-                <Icon aria-hidden className="size-4" />
-              </span>
-            </div>
-            <p className={cn('mt-3 text-2xl font-semibold tabular-nums', valueClass)}>
-              {label === 'Net balance'
-                ? formatMoney(value, currency)
-                : formatAbsMoney(value, currency)}
-            </p>
-          </div>
-        ))}
-      </div>
+      <BalanceCards totals={balances?.totals ?? []} />
 
-      {balances && balances.entries.length > 0 && (
+      {people.length > 0 && (
         <Card title="Who owes whom" description="Across every group and friend.">
           <ul className="divide-y divide-slate-100">
-            {balances.entries.map((entry) => {
-              const amount = toCents(entry.amount)
-              return (
-                <li key={entry.user.id} className="flex items-center gap-3 py-2.5">
-                  <Avatar name={entry.user.full_name} src={entry.user.avatar_url} size="sm" />
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
-                    {amount > 0
-                      ? `${entry.user.full_name} owes you`
-                      : `You owe ${entry.user.full_name}`}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-sm font-semibold tabular-nums',
-                      amount > 0 ? 'text-emerald-600' : 'text-red-600',
-                    )}
-                  >
-                    {formatAbsMoney(entry.amount, currency)}
-                  </span>
-                </li>
-              )
-            })}
+            {people.map((entry) => (
+              <PersonBalanceRow
+                key={`${entry.user.id}-${entry.currency}`}
+                entry={entry}
+                onSettle={openSettle}
+              />
+            ))}
           </ul>
         </Card>
       )}
@@ -140,20 +107,20 @@ export function DashboardPage() {
       <Card
         title="Recent activity"
         action={
-          recent && recent.items.length > 0 ? (
-            <Link to="/expenses" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+          activity && activity.items.length > 0 ? (
+            <Link to="/activity" className="text-sm font-medium text-brand-700 hover:text-brand-800">
               View all
             </Link>
           ) : undefined
         }
       >
-        {expensesLoading ? (
+        {activityLoading ? (
           <div className="space-y-2 py-2">
             <div className="skeleton h-12 w-full" />
             <div className="skeleton h-12 w-full" />
           </div>
-        ) : recent && recent.items.length > 0 ? (
-          <ExpenseList expenses={recent.items} />
+        ) : activity && activity.items.length > 0 ? (
+          <ActivityFeed items={activity.items} />
         ) : (
           <EmptyState
             icon={Receipt}
@@ -179,6 +146,17 @@ export function DashboardPage() {
           />
         )}
       </Card>
+
+      <SettleUpModal
+        isOpen={isSettleOpen}
+        onClose={() => setSettleOpen(false)}
+        candidates={[
+          ...(user ? [user] : []),
+          ...(friends?.map((friend) => friend.user) ?? []),
+        ]}
+        currency={settleWith?.currency ?? user?.currency ?? 'USD'}
+        defaultCounterpartyId={settleWith?.user.id}
+      />
     </div>
   )
 }
