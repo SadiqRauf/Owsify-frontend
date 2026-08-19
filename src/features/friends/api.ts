@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api-client'
 import type {
   FriendSummary,
   Friendship,
+  Invitation,
   MessageResponse,
   UserSearchResult,
 } from '@/types/api'
@@ -54,6 +55,31 @@ export const friendsApi = {
     const { data } = await apiClient.get<UserSearchResult[]>('/users/search', {
       params: { q: query },
     })
+    return data
+  },
+
+  // --- Invitations, for people with no account yet ---------------------- //
+  async invitations(): Promise<Invitation[]> {
+    const { data } = await apiClient.get<Invitation[]>('/friends/invitations')
+    return data
+  },
+
+  async invite(input: { email: string; message?: string | null }): Promise<Invitation> {
+    const { data } = await apiClient.post<Invitation>('/friends/invitations', input)
+    return data
+  },
+
+  async resendInvitation(invitationId: string): Promise<Invitation> {
+    const { data } = await apiClient.post<Invitation>(
+      `/friends/invitations/${invitationId}/resend`,
+    )
+    return data
+  },
+
+  async cancelInvitation(invitationId: string): Promise<MessageResponse> {
+    const { data } = await apiClient.delete<MessageResponse>(
+      `/friends/invitations/${invitationId}`,
+    )
     return data
   },
 }

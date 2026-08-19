@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Textarea } from '@/components/ui/Textarea'
@@ -136,10 +137,9 @@ export function GroupFormModal({ isOpen, onClose, group, onCreated }: GroupFormM
           </div>
         </div>
 
-        <Input
-          label="Currency"
-          maxLength={3}
-          hint="Every expense in this group uses it."
+        <CurrencySelect
+          hint="Every expense in this group is recorded in it."
+          ensureCode={group?.currency}
           error={errors.currency?.message}
           {...register('currency')}
         />

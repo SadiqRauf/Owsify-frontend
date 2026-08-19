@@ -23,6 +23,11 @@ export const registerSchema = z
     email: z.email('Enter a valid email address.'),
     password,
     confirm_password: z.string().min(1, 'Confirm your password.'),
+    currency: z
+      .string()
+      .trim()
+      .length(3, 'Pick a currency.')
+      .transform((value) => value.toUpperCase()),
   })
   .refine((values) => values.password === values.confirm_password, {
     message: 'Passwords do not match.',

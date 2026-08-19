@@ -33,6 +33,7 @@ export const queryKeys = {
     requests: (direction: 'incoming' | 'outgoing') =>
       ['friends', 'requests', direction] as const,
     search: (query: string) => ['friends', 'search', query] as const,
+    invitations: ['friends', 'invitations'] as const,
   },
   groups: {
     all: ['groups'] as const,

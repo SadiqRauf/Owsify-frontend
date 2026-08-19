@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 import { Input } from '@/components/ui/Input'
 import { authApi } from '@/features/auth/api'
 import {
@@ -72,10 +73,10 @@ function ProfileForm() {
 
         <Input label="Full name" error={errors.full_name?.message} {...register('full_name')} />
 
-        <Input
+        <CurrencySelect
           label="Default currency"
-          maxLength={3}
-          hint="Three-letter code, for example USD or EUR."
+          hint="Used for new personal expenses and your overall balance."
+          ensureCode={user?.currency}
           error={errors.currency?.message}
           {...register('currency')}
         />

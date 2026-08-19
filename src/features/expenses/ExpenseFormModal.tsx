@@ -5,12 +5,14 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { useAuth } from '@/features/auth/use-auth'
 import { getErrorMessage, isApiError } from '@/lib/api-client'
+import { currencyLabel, currencySymbol } from '@/lib/currencies'
 import { formatMoney, fromCents, splitEvenly, sumCents, toCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { EXPENSE_CATEGORIES, type Expense, type SplitType, type User } from '@/types/api'
@@ -73,6 +75,7 @@ export function ExpenseFormModal({
       category: expense?.category ?? 'general',
       notes: expense?.notes ?? '',
       paid_by_id: expense?.paid_by.id ?? user?.id ?? '',
+      currency: expense?.currency ?? currency,
       split_type: expense?.split_type ?? 'equal',
       participants: candidates.map((candidate) => {
         const split = existingSplits.get(candidate.id)
@@ -89,7 +92,7 @@ export function ExpenseFormModal({
         }
       }),
     }
-  }, [candidates, expense, user?.id])
+  }, [candidates, currency, expense, user?.id])
 
   const {
     register,
@@ -115,6 +118,9 @@ export function ExpenseFormModal({
 
   const amount = useWatch({ control, name: 'amount' })
   const splitType = useWatch({ control, name: 'split_type' })
+  // A group fixes the currency for every expense in it; a personal expense is free
+  // to use any, so only then is the selector live.
+  const selectedCurrency = useWatch({ control, name: 'currency' }) || currency
   const participants = useWatch({ control, name: 'participants' })
 
   const selected = (participants ?? []).filter((participant) => participant.selected)
@@ -203,7 +209,12 @@ export function ExpenseFormModal({
       if (isEditing) {
         await updateExpense.mutateAsync(payload)
       } else {
-        await createExpense.mutateAsync({ ...payload, group_id: groupId ?? null, currency })
+        await createExpense.mutateAsync({
+          ...payload,
+          group_id: groupId ?? null,
+          // A group expense always takes the group's currency server-side.
+          currency: groupId ? currency : values.currency,
+        })
       }
       close()
     } catch (error) {
@@ -255,7 +266,7 @@ export function ExpenseFormModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label={`Amount (${currency})`}
+            label={`Amount (${currencySymbol(selectedCurrency)})`}
             inputMode="decimal"
             placeholder="0.00"
             error={errors.amount?.message}
@@ -269,6 +280,24 @@ export function ExpenseFormModal({
             {...register('expense_date')}
           />
         </div>
+
+        {groupId ? (
+          // Locked, but shown, so it is never a surprise which currency was used.
+          <Select
+            label="Currency"
+            options={[{ value: selectedCurrency, label: currencyLabel(selectedCurrency) }]}
+            value={selectedCurrency}
+            disabled
+            hint="Set by the group, so its expenses stay in one currency."
+            onChange={() => undefined}
+          />
+        ) : (
+          <CurrencySelect
+            ensureCode={selectedCurrency}
+            error={errors.currency?.message}
+            {...register('currency')}
+          />
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
@@ -354,7 +383,7 @@ export function ExpenseFormModal({
                         isSelected ? 'font-medium text-slate-900' : 'text-slate-300',
                       )}
                     >
-                      {isSelected ? formatMoney(share / 100, currency) : '—'}
+                      {isSelected ? formatMoney(share / 100, selectedCurrency) : '—'}
                     </span>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -375,7 +404,7 @@ export function ExpenseFormModal({
                       />
                       {splitType === 'percentage' && (
                         <span className="w-16 text-right text-xs tabular-nums text-slate-500">
-                          {isSelected ? formatMoney(share / 100, currency) : ''}
+                          {isSelected ? formatMoney(share / 100, selectedCurrency) : ''}
                         </span>
                       )}
                     </div>
@@ -395,13 +424,13 @@ export function ExpenseFormModal({
             >
               <span>
                 {splitType === 'exact'
-                  ? `${formatMoney(assignedCents / 100, currency)} of ${formatMoney(totalCents / 100, currency)} assigned`
+                  ? `${formatMoney(assignedCents / 100, selectedCurrency)} of ${formatMoney(totalCents / 100, selectedCurrency)} assigned`
                   : `${selected.reduce((sum, p) => sum + Number(p.value || 0), 0).toFixed(2)}% assigned`}
               </span>
               <span className="font-medium tabular-nums">
                 {remainderCents === 0
                   ? 'Balanced'
-                  : `${formatMoney(Math.abs(remainderCents) / 100, currency)} ${remainderCents > 0 ? 'left' : 'over'}`}
+                  : `${formatMoney(Math.abs(remainderCents) / 100, selectedCurrency)} ${remainderCents > 0 ? 'left' : 'over'}`}
               </span>
             </div>
           )}

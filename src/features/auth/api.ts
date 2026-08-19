@@ -15,6 +15,7 @@ export const authApi = {
       email: values.email,
       full_name: values.full_name,
       password: values.password,
+      currency: values.currency,
     })
     return data
   },

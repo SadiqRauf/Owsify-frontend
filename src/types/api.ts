@@ -172,3 +172,22 @@ export interface BalanceSummary {
   net: string
   entries: BalanceEntry[]
 }
+
+export type InvitationStatus = 'pending' | 'accepted' | 'cancelled'
+
+export interface Invitation {
+  id: string
+  email: string
+  status: InvitationStatus
+  message: string | null
+  created_at: string
+  expires_at: string
+  accepted_at: string | null
+  invited_by: User
+  is_expired: boolean
+  /**
+   * How the server handled the message. `email` means it really went out over
+   * SMTP; `console` and `file` mean delivery is stubbed for local development.
+   */
+  delivery: 'email' | 'console' | 'file'
+}

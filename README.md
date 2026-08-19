@@ -35,6 +35,7 @@ src/
     token-storage.ts     the only module that touches localStorage
     query-client.ts      TanStack Query defaults and the cache-key registry
     money.ts             integer-cent arithmetic and currency formatting
+    currencies.ts        the currency shortlist offered in the UI
     utils.ts             cn(), formatting helpers
   types/api.ts           response shapes mirroring the backend schemas
   features/
@@ -43,8 +44,8 @@ src/
     groups/              api, queries, GroupFormModal, AddMembersModal
     expenses/            api, queries, schemas, ExpenseFormModal, ExpenseList
   components/
-    ui/                  Button, Input, Select, Textarea, Modal, Alert, Card,
-                         Avatar, Badge, ConfirmDialog
+    ui/                  Button, Input, Select, CurrencySelect, Textarea, Modal,
+                         Alert, Card, Avatar, Badge, ConfirmDialog
     feedback/            Spinner, Skeleton, ErrorState, EmptyState, ErrorBoundary
     layout/              AppLayout, AuthLayout, Sidebar, Navbar, Logo
   routes/                ProtectedRoute, PublicOnlyRoute
@@ -60,7 +61,7 @@ src/
 | `/dashboard` | Balance tiles, who owes whom, recent activity |
 | `/groups`, `/groups/:groupId` | Group list, and detail with members and expenses |
 | `/expenses`, `/expenses/:expenseId` | Paged expense list, and detail with edit/delete |
-| `/friends` | Friends, requests both ways, and user search |
+| `/friends` | Friends, requests both ways, user search, and email invitations |
 | `/profile` | Profile and password |
 | anything else | 404 page |
 
@@ -102,3 +103,30 @@ The expense form previews each person's share as you type, using the same
 distribution rule the backend applies, so what you see before submitting is what
 gets saved. For exact and percentage splits a running total shows how much is still
 unassigned, and the form refuses to submit until it balances.
+
+
+## Currencies
+
+`CurrencySelect` is used on sign-up, the profile, the group form, and personal
+expenses. `src/lib/currencies.ts` holds a curated shortlist with names and symbols;
+the backend validates against the full ISO 4217 set, and every code here is drawn
+from it, so the dropdown can never offer something the API would reject.
+
+Pass `ensureCode` when editing something that already has a currency. An account or
+group created against a code outside the shortlist still shows its own value rather
+than being silently switched to another currency.
+
+A group expense shows the currency field but disabled: the backend forces the
+group's currency so one group never mixes units, and hiding the field would make
+that a surprise rather than a rule.
+
+## Invitations
+
+Searching for someone who is not on Splitwise shows an invite panel instead of a
+dead end. If the search term is already an email address it is prefilled, and the
+field then follows the search box until the user edits it — derived state, not an
+effect, so there is no cascading render.
+
+If the address turns out to have an account (someone signed up between the search
+and the invite), the panel quietly sends a friend request instead of surfacing the
+conflict as an error.

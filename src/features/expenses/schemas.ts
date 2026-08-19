@@ -39,6 +39,11 @@ export const expenseSchema = z
     category: z.enum(EXPENSE_CATEGORIES),
     notes: z.string().trim().max(2000, 'Notes are too long.').optional(),
     paid_by_id: z.string().min(1, 'Choose who paid.'),
+    currency: z
+      .string()
+      .trim()
+      .length(3, 'Pick a currency.')
+      .transform((value) => value.toUpperCase()),
     split_type: z.enum(['equal', 'exact', 'percentage']),
     participants: z.array(participantSchema),
   })

@@ -1,4 +1,4 @@
-import { Check, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { Check, Mail, RefreshCw, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { EmptyState } from '@/components/feedback/EmptyState'
@@ -14,10 +14,13 @@ import { UserSearch } from '@/features/friends/UserSearch'
 import {
   useAcceptFriendRequest,
   useCancelFriendRequest,
+  useCancelInvitation,
   useFriendRequests,
   useFriends,
+  useInvitations,
   useRejectFriendRequest,
   useRemoveFriend,
+  useResendInvitation,
 } from '@/features/friends/queries'
 import { formatDate } from '@/lib/utils'
 import type { FriendSummary } from '@/types/api'
@@ -110,6 +113,65 @@ function OutgoingRequests() {
   )
 }
 
+function SentInvitations() {
+  const { data, isLoading } = useInvitations()
+  const resend = useResendInvitation()
+  const cancel = useCancelInvitation()
+
+  // Accepted invitations already show up as friends, so only the open ones matter.
+  const open = (data ?? []).filter((invitation) => invitation.status === 'pending')
+
+  if (isLoading || open.length === 0) return null
+
+  return (
+    <Card
+      title="Invitations"
+      description="People you invited who have not signed up yet."
+    >
+      <ul className="divide-y divide-slate-100">
+        {open.map((invitation) => (
+          <li key={invitation.id} className="flex items-center gap-3 py-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <Mail aria-hidden className="size-4" />
+            </span>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-900">{invitation.email}</p>
+              <p className="truncate text-xs text-slate-500">
+                {invitation.is_expired
+                  ? `Expired ${formatDate(invitation.expires_at)}`
+                  : `Invited ${formatDate(invitation.created_at)} · expires ${formatDate(invitation.expires_at)}`}
+              </p>
+            </div>
+
+            <Badge tone={invitation.is_expired ? 'warning' : 'neutral'}>
+              {invitation.is_expired ? 'Expired' : 'Invited'}
+            </Badge>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              isLoading={resend.isPending && resend.variables === invitation.id}
+              onClick={() => resend.mutate(invitation.id)}
+              leftIcon={<RefreshCw className="size-4" />}
+            >
+              Resend
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              isLoading={cancel.isPending && cancel.variables === invitation.id}
+              onClick={() => cancel.mutate(invitation.id)}
+            >
+              Cancel
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
 export function FriendsPage() {
   const { data: friends, isLoading, isError, error, refetch } = useFriends()
   const removeFriend = useRemoveFriend()
@@ -133,6 +195,7 @@ export function FriendsPage() {
 
       <IncomingRequests />
       <OutgoingRequests />
+      <SentInvitations />
 
       {isLoading ? (
         <CardSkeleton lines={4} />
@@ -169,7 +232,7 @@ export function FriendsPage() {
           <EmptyState
             icon={Users}
             title="No friends yet"
-            description="Search for people by name or email to send your first request."
+            description="Search for people by name or email — or invite them by email if they are not here yet."
             action={
               <Button onClick={() => setSearchOpen(true)} leftIcon={<UserPlus className="size-4" />}>
                 Find people
@@ -183,7 +246,7 @@ export function FriendsPage() {
         isOpen={isSearchOpen}
         onClose={() => setSearchOpen(false)}
         title="Add a friend"
-        description="Search by name or email address."
+        description="Search by name or email. Not on Splitwise? Invite them."
       >
         <UserSearch />
       </Modal>

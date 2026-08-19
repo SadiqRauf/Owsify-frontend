@@ -1,20 +1,38 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 import { Input } from '@/components/ui/Input'
 import { registerSchema, type RegisterValues } from '@/features/auth/schemas'
 import { useAuth } from '@/features/auth/use-auth'
 import { getErrorMessage, isApiError } from '@/lib/api-client'
+import { DEFAULT_CURRENCY } from '@/lib/currencies'
+
+/** Guess a sensible default from the browser locale, falling back to USD. */
+function localeCurrency(): string {
+  try {
+    const resolved = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' })
+    return resolved.resolvedOptions().currency ?? DEFAULT_CURRENCY
+  } catch {
+    return DEFAULT_CURRENCY
+  }
+}
 
 export function RegisterPage() {
   const { register: createAccount } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [formError, setFormError] = useState<string | null>(null)
+
+  // An emailed invitation links here with the address prefilled, so the account
+  // is created against the same address the invite was sent to.
+  const invitedEmail = searchParams.get('email') ?? ''
+  const wasInvited = Boolean(searchParams.get('invite'))
 
   const {
     register,
@@ -23,7 +41,13 @@ export function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { full_name: '', email: '', password: '', confirm_password: '' },
+    defaultValues: {
+      full_name: '',
+      email: invitedEmail,
+      password: '',
+      confirm_password: '',
+      currency: localeCurrency(),
+    },
   })
 
   const onSubmit = handleSubmit(async (values) => {
@@ -47,8 +71,12 @@ export function RegisterPage() {
 
   return (
     <AuthLayout
-      title="Create your account"
-      subtitle="Split bills with friends without the spreadsheet."
+      title={wasInvited ? 'You have been invited' : 'Create your account'}
+      subtitle={
+        wasInvited
+          ? 'Finish signing up and you will be connected automatically.'
+          : 'Split bills with friends without the spreadsheet.'
+      }
       footer={
         <>
           Already have an account?{' '}
@@ -60,6 +88,12 @@ export function RegisterPage() {
     >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         {formError && <Alert tone="error">{formError}</Alert>}
+
+        {wasInvited && invitedEmail && (
+          <Alert tone="info">
+            Sign up with <strong>{invitedEmail}</strong> to be connected with whoever invited you.
+          </Alert>
+        )}
 
         <Input
           label="Full name"
@@ -76,6 +110,13 @@ export function RegisterPage() {
           placeholder="you@example.com"
           error={errors.email?.message}
           {...register('email')}
+        />
+
+        <CurrencySelect
+          label="Default currency"
+          hint="You can change this later."
+          error={errors.currency?.message}
+          {...register('currency')}
         />
 
         <Input

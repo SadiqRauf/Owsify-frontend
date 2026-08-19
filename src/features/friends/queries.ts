@@ -60,3 +60,42 @@ export function useCancelFriendRequest() {
 export function useRemoveFriend() {
   return useFriendMutation((userId: string) => friendsApi.remove(userId))
 }
+
+// --------------------------------------------------------------------------- //
+// Invitations
+// --------------------------------------------------------------------------- //
+export function useInvitations() {
+  return useQuery({
+    queryKey: queryKeys.friends.invitations,
+    queryFn: friendsApi.invitations,
+  })
+}
+
+/** Narrower than useFriendMutation: an invite cannot change search results or the
+ *  friend list, and refetching the search would unmount the panel mid-flow. */
+function useInvitationMutation<TArgs>(fn: (args: TArgs) => Promise<unknown>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.friends.invitations }),
+  })
+}
+
+export function useSendInvitation() {
+  return useInvitationMutation((input: { email: string; message?: string | null }) =>
+    friendsApi.invite(input),
+  )
+}
+
+export function useResendInvitation() {
+  return useInvitationMutation((invitationId: string) =>
+    friendsApi.resendInvitation(invitationId),
+  )
+}
+
+export function useCancelInvitation() {
+  return useInvitationMutation((invitationId: string) =>
+    friendsApi.cancelInvitation(invitationId),
+  )
+}
