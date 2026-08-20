@@ -152,7 +152,7 @@ function InvitePanel({ term }: { term: string }) {
           <Mail aria-hidden className="size-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-900">Not on Splitwise yet?</p>
+          <p className="text-sm font-medium text-slate-900">Not on Owsify yet?</p>
           <p className="mt-0.5 text-sm text-slate-500">
             Send them an email invitation. You will be connected as soon as they sign up.
           </p>
@@ -243,7 +243,7 @@ export function UserSearch() {
       {noMatches && (
         <>
           <p className="text-sm text-slate-500">
-            Nobody on Splitwise matches “{trimmed}”.
+            Nobody on Owsify matches “{trimmed}”.
           </p>
           <InvitePanel term={trimmed} />
         </>

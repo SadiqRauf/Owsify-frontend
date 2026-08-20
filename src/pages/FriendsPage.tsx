@@ -246,7 +246,7 @@ export function FriendsPage() {
         isOpen={isSearchOpen}
         onClose={() => setSearchOpen(false)}
         title="Add a friend"
-        description="Search by name or email. Not on Splitwise? Invite them."
+        description="Search by name or email. Not on Owsify? Invite them."
       >
         <UserSearch />
       </Modal>

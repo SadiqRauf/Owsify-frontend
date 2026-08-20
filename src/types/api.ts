@@ -311,11 +311,20 @@ export interface CategorySpending {
   expense_count: number
 }
 
-export interface MonthSpending {
-  /** ISO year-month, e.g. "2026-08". */
-  month: string
+export type Granularity = 'daily' | 'monthly'
+
+export interface SeriesPoint {
+  /** ISO date for a daily bucket, ISO year-month for a monthly one. */
+  bucket: string
+  /** First day the bucket covers. */
+  start: string
   amount: string
   expense_count: number
+}
+
+export interface SpendingSeries {
+  granularity: Granularity
+  points: SeriesPoint[]
 }
 
 export interface GroupRef {
@@ -347,7 +356,7 @@ export interface Dashboard {
   balances: CurrencyTotals[]
   people: PersonBalance[]
   by_category: CategorySpending[]
-  by_month: MonthSpending[]
+  series: SpendingSeries
   by_group: GroupSpending[]
   groups: GroupStatistics[]
   recent_expenses: Expense[]

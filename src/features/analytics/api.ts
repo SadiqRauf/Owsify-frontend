@@ -1,11 +1,18 @@
 import { apiClient } from '@/lib/api-client'
-import type { CategorySpending, Dashboard, GroupStatistics, MonthSpending } from '@/types/api'
+import type {
+  CategorySpending,
+  Dashboard,
+  Granularity,
+  GroupStatistics,
+  SpendingSeries,
+} from '@/types/api'
 
 export interface AnalyticsWindow {
   start_date?: string
   end_date?: string
   currency?: string
-  months?: number
+  granularity?: Granularity
+  count?: number
 }
 
 export const analyticsApi = {
@@ -21,8 +28,10 @@ export const analyticsApi = {
     return data
   },
 
-  async monthly(params: AnalyticsWindow & { group_id?: string } = {}): Promise<MonthSpending[]> {
-    const { data } = await apiClient.get<MonthSpending[]>('/analytics/monthly', { params })
+  async series(params: AnalyticsWindow & { group_id?: string } = {}): Promise<SpendingSeries> {
+    const { data } = await apiClient.get<SpendingSeries>('/analytics/spending-series', {
+      params,
+    })
     return data
   },
 

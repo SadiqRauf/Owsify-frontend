@@ -3,9 +3,13 @@ dist/
 dist-ssr/
 *.local
 
-# Local env overrides. .env holds shared dev defaults and is committed.
-.env.local
-.env.*.local
+# Every .env variant is ignored, including plain .env: even though only VITE_
+# variables reach the browser, a committed .env is how a real key eventually ends
+# up in git by habit. The template is the thing that gets committed.
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 .DS_Store
 *.log

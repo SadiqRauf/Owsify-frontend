@@ -16,7 +16,7 @@ function required(name: string, value: string | undefined): string {
 
 export const env = {
   apiUrl: required('VITE_API_URL', import.meta.env.VITE_API_URL),
-  appName: import.meta.env.VITE_APP_NAME ?? 'Splitwise',
+  appName: import.meta.env.VITE_APP_NAME ?? 'Owsify',
   isDev: import.meta.env.DEV,
   isProd: import.meta.env.PROD,
 } as const

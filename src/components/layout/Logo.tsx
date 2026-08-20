@@ -1,17 +1,34 @@
-import { Scale } from 'lucide-react'
-
 import { env } from '@/config/env'
 import { cn } from '@/lib/utils'
 
-export function Logo({ className }: { className?: string }) {
+interface LogoProps {
+  /**
+   * `mark` is the compact form for the app chrome; `lockup` is the larger form
+   * for the sign-in and sign-up pages. Both draw the supplied artwork — they
+   * differ only in how much room it is given.
+   */
+  variant?: 'mark' | 'lockup'
+  className?: string
+}
+
+const WIDTHS = {
+  // 200px inside a 256px sidebar with 20px padding either side, which puts the
+  // 3.37:1 artwork at roughly 59px tall — just inside the 64px header.
+  mark: 'max-w-[160px]',
+  lockup: 'max-w-[260px]',
+} as const
+
+export function Logo({ variant = 'mark', className }: LogoProps) {
   return (
-    <span className={cn('flex items-center gap-2', className)}>
-      <span className="flex size-8 items-center justify-center rounded-lg bg-brand-600 text-white">
-        <Scale aria-hidden className="size-4.5" />
-      </span>
-      <span className="text-base font-semibold tracking-tight text-slate-900">
-        {env.appName}
-      </span>
-    </span>
+    <img
+      src="/logo-lockup.png"
+      /* The artwork is the only thing naming the app in the chrome, so it carries
+         the accessible name rather than being hidden — a decorative logo would
+         leave a screen reader on a page with no name at all. */
+      alt={env.appName}
+      width={640}
+      height={190}
+      className={cn('h-auto w-full', WIDTHS[variant], className)}
+    />
   )
 }

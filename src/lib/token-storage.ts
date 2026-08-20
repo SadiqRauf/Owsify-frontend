@@ -9,8 +9,8 @@
 
 import type { TokenPair } from '@/types/api'
 
-const ACCESS_TOKEN_KEY = 'splitwise.access_token'
-const REFRESH_TOKEN_KEY = 'splitwise.refresh_token'
+const ACCESS_TOKEN_KEY = 'owsify.access_token'
+const REFRESH_TOKEN_KEY = 'owsify.refresh_token'
 
 type Listener = () => void
 

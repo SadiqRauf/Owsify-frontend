@@ -22,21 +22,32 @@ import { SettleUpModal } from '@/features/settlements/SettleUpModal'
 import { useActivity } from '@/features/settlements/queries'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
-import { EXPENSE_CATEGORIES, type ExpenseCategory, type PersonBalance } from '@/types/api'
+import {
+  EXPENSE_CATEGORIES,
+  type ExpenseCategory,
+  type Granularity,
+  type PersonBalance,
+} from '@/types/api'
 
 /** Named windows rather than two date pickers — this is how people actually think. */
 const RANGES = [
-  { value: '30', label: 'Last 30 days', months: 3 },
-  { value: '90', label: 'Last 3 months', months: 6 },
-  { value: '180', label: 'Last 6 months', months: 6 },
-  { value: '365', label: 'Last 12 months', months: 12 },
-  { value: 'all', label: 'All time', months: 12 },
+  { value: '30', label: 'Last 30 days' },
+  { value: '90', label: 'Last 3 months' },
+  { value: '180', label: 'Last 6 months' },
+  { value: '365', label: 'Last 12 months' },
+  { value: 'all', label: 'All time' },
 ] as const
 
-const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-]
+/**
+ * The time-series chart covers a fixed window per granularity, independent of the
+ * Period filter: a day-by-day chart over a year would be 365 unreadable bars, and
+ * a month-by-month chart of 30 days would be a single one. Each states its own
+ * range in the subtitle so the two are never confused.
+ */
+const SERIES_WINDOW: Record<Granularity, { count: number; label: string }> = {
+  daily: { count: 30, label: 'last 30 days' },
+  monthly: { count: 12, label: 'last 12 months' },
+}
 
 function isoDaysAgo(days: number): string {
   const date = new Date()
@@ -54,17 +65,17 @@ export function DashboardPage() {
 
   const [range, setRange] = useState<(typeof RANGES)[number]['value']>('180')
   const [category, setCategory] = useState<ExpenseCategory | 'all'>('all')
+  const [granularity, setGranularity] = useState<Granularity>('daily')
   const [settleWith, setSettleWith] = useState<PersonBalance | null>(null)
   const [isSettleOpen, setSettleOpen] = useState(false)
-
-  const selectedRange = RANGES.find((option) => option.value === range) ?? RANGES[2]
 
   const params = useMemo(
     () => ({
       start_date: range === 'all' ? undefined : isoDaysAgo(Number(range)),
-      months: selectedRange.months,
+      granularity,
+      count: SERIES_WINDOW[granularity].count,
     }),
-    [range, selectedRange.months],
+    [range, granularity],
   )
 
   const { data, isLoading, isError, error, refetch, isPlaceholderData } = useDashboard(params)
@@ -83,14 +94,33 @@ export function DashboardPage() {
 
   const filteredSpend = visibleCategories.reduce((total, row) => total + Number(row.amount), 0)
 
-  const monthData: ColumnDatum[] = (data?.by_month ?? []).map((row) => {
-    const [year, month] = row.month.split('-')
+  const points = data?.series.points ?? []
+  const isMonthly = (data?.series.granularity ?? granularity) === 'monthly'
+
+  const seriesData: ColumnDatum[] = points.map((row, index) => {
+    // Parsed as local time, not UTC: `new Date('2026-08-20')` is midnight UTC and
+    // renders as the 19th anywhere west of Greenwich.
+    const when = new Date(`${row.start}T00:00:00`)
     return {
-      label: `${MONTH_NAMES[Number(month) - 1]} ${year}`,
-      shortLabel: MONTH_NAMES[Number(month) - 1],
+      label: isMonthly
+        ? when.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+        : when.toLocaleDateString(undefined, {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+          }),
+      shortLabel: isMonthly
+        ? when.toLocaleDateString(undefined, { month: 'short' })
+        : String(when.getDate()),
       value: Number(row.amount),
+      isCurrent: index === points.length - 1,
     }
   })
+
+  // Stated in the chart's own subtitle, because the window is not the one the
+  // Period filter governs.
+  const seriesTotal = seriesData.reduce((sum, point) => sum + point.value, 0)
+  const activeBuckets = seriesData.filter((point) => point.value > 0).length
 
   const categoryData: BarDatum[] = visibleCategories.map((row) => ({
     key: row.category,
@@ -240,24 +270,51 @@ export function DashboardPage() {
       ) : (
         <>
           <ChartFrame
-            title="Monthly spending"
-            subtitle="Your share of expenses, by month."
-            summary={`Monthly spending in ${currency}. ${monthData
-              .map((month) => `${month.label}: ${formatMoney(month.value, currency)}`)
+            title="Spending over time"
+            subtitle={
+              seriesTotal > 0
+                ? `${formatMoney(seriesTotal, currency)} over the ${SERIES_WINDOW[granularity].label}, across ${activeBuckets} ${isMonthly ? 'month' : 'day'}${activeBuckets === 1 ? '' : 's'}.`
+                : `Your share of expenses, ${isMonthly ? 'month by month' : 'day by day'} — ${SERIES_WINDOW[granularity].label}.`
+            }
+            summary={`Spending in ${currency}, ${isMonthly ? 'by month' : 'by day'}, over the ${SERIES_WINDOW[granularity].label}. ${seriesData
+              .filter((point) => point.value > 0)
+              .map((point) => `${point.label}: ${formatMoney(point.value, currency)}`)
               .join('. ')}`}
-            isEmpty={monthData.every((month) => month.value === 0)}
+            isEmpty={seriesTotal === 0}
+            emptyMessage={`No spending in the ${SERIES_WINDOW[granularity].label}.`}
+            action={
+              <div role="tablist" aria-label="Granularity" className="flex rounded-lg bg-slate-100 p-0.5">
+                {(['daily', 'monthly'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="tab"
+                    aria-selected={granularity === option}
+                    onClick={() => setGranularity(option)}
+                    className={cn(
+                      'rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors',
+                      granularity === option
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900',
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            }
             table={
               <ChartTable
-                columns={['Month', 'Spent', 'Expenses']}
-                rows={(data?.by_month ?? []).map((row) => [
-                  row.month,
+                columns={[isMonthly ? 'Month' : 'Day', 'Spent', 'Expenses']}
+                rows={points.map((row) => [
+                  row.bucket,
                   formatMoney(row.amount, currency),
                   row.expense_count,
                 ])}
               />
             }
           >
-            <ColumnChart data={monthData} currency={currency} />
+            <ColumnChart data={seriesData} currency={currency} />
           </ChartFrame>
 
           <div className="grid gap-6 lg:grid-cols-2">

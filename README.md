@@ -1,4 +1,4 @@
-# Splitwise Clone — Frontend
+# Owsify — Frontend
 
 React 19 + TypeScript + Vite, with Tailwind CSS v4, React Router, TanStack Query,
 React Hook Form and Zod.
@@ -122,7 +122,7 @@ that a surprise rather than a rule.
 
 ## Invitations
 
-Searching for someone who is not on Splitwise shows an invite panel instead of a
+Searching for someone who is not on Owsify shows an invite panel instead of a
 dead end. If the search term is already an email address it is prefilled, and the
 field then follows the search box until the user edits it — derived state, not an
 effect, so there is no cascading render.
@@ -130,3 +130,31 @@ effect, so there is no cascading render.
 If the address turns out to have an account (someone signed up between the search
 and the invite), the panel quietly sends a friend request instead of surfacing the
 conflict as an error.
+
+
+## The name
+
+The product is **Owsify**. The Postgres role and database are still called
+`splitwise`, as is the repository directory — those are infrastructure identifiers
+on a running server, and changing them means recreating and migrating rather than
+renaming. Say the word and I will do it as a separate, deliberate step.
+
+Renaming the `localStorage` keys from `splitwise.*` to `owsify.*` signs out anyone
+holding an old token once, because the app no longer looks under the old keys.
+
+
+## Brand assets
+
+`public/logo.png` is the supplied lockup: mark, wordmark and tagline on a
+transparent background, 1408×768 with wide margins. Three assets are derived from
+it, cropped to the measured alpha bounds rather than by eye:
+
+| File | From | Used for |
+| --- | --- | --- |
+| `logo-mark.png` | the mark, padded square, 192px | sidebar and navbar at 32px |
+| `logo-lockup.png` | mark + wordmark, trimmed, 640px wide | the sign-in and sign-up pages |
+| `favicon-32.png`, `apple-touch-icon.png` | the mark | browser tab and home screen |
+
+The sidebar pairs the mark with the wordmark as **text** rather than using the
+lockup: at the 32px the header allows, the lockup's tagline is unreadable, and
+scaling artwork down until its words vanish is worse than not showing them.
