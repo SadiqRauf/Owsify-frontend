@@ -46,12 +46,14 @@ export function useUpdateExpense(expenseId: string) {
 }
 
 export function useDeleteExpense() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ expenseId }: { expenseId: string; groupId?: string | null }) =>
       expensesApi.remove(expenseId),
-    onSuccess: (_result, { expenseId, groupId }) => {
-      queryClient.removeQueries({ queryKey: queryKeys.expenses.detail(expenseId) })
+    onSuccess: (_result, { groupId }) => {
+      // invalidateLedger deliberately skips expense details, and nothing removes
+      // the deleted one: removing a query that still has an observer makes React
+      // Query refetch it, which would ask for the row we just deleted. The detail
+      // page unmounts immediately after this and gc drops the entry.
       invalidateLedger(groupId)
     },
   })

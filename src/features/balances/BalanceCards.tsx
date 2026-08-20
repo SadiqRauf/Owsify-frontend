@@ -56,6 +56,78 @@ function StatCard({ label, value, currency, icon: Icon, signed = false }: CardPr
 }
 
 /**
+ * The dashboard's headline: one total balance figure, with the two directions it
+ * is made of underneath.
+ *
+ * Total balance is the number people open the app for, so it is a hero figure
+ * rather than one of three equal tiles — a value competing with its own inputs
+ * for attention reads as three unrelated numbers.
+ */
+export function TotalBalanceHero({ totals }: { totals: CurrencyTotals[] }) {
+  // With no activity there is still a figure to state, just a zero one.
+  const rows = totals.length > 0 ? totals : [{ currency: 'USD', owed_to_you: '0.00', you_owe: '0.00', net: '0.00' }]
+
+  return (
+    <div className="space-y-4">
+      {rows.map((row) => {
+        const cents = toCents(row.net)
+        return (
+          <div
+            key={row.currency}
+            className="rounded-card bg-white p-5 shadow-sm ring-1 ring-slate-200/70 sm:p-6"
+          >
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Total balance{rows.length > 1 ? ` · ${row.currency}` : ''}
+                </p>
+                <p
+                  className={cn(
+                    'mt-1 text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl',
+                    cents > 0 ? 'text-emerald-600' : cents < 0 ? 'text-red-600' : 'text-slate-900',
+                  )}
+                >
+                  {formatMoney(row.net, row.currency)}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {cents > 0
+                    ? 'in your favour overall'
+                    : cents < 0
+                      ? 'you are behind overall'
+                      : 'you are all square'}
+                </p>
+              </div>
+
+              {/* The two halves the total is made of. */}
+              <dl className="flex gap-8">
+                <div>
+                  <dt className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                    <ArrowUpRight aria-hidden className="size-4 text-red-600" />
+                    You owe
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums text-red-600">
+                    {formatAbsMoney(row.you_owe, row.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                    <ArrowDownLeft aria-hidden className="size-4 text-emerald-600" />
+                    You are owed
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums text-emerald-600">
+                    {formatAbsMoney(row.owed_to_you, row.currency)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
  * One row of cards per currency.
  *
  * Currencies are never combined into a single figure — adding USD to EUR would

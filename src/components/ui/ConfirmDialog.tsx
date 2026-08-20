@@ -25,6 +25,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   tone = 'danger',
 }: ConfirmDialogProps) {
+  // Success is announced by the api-client interceptor, so nothing to do here.
   const [isWorking, setIsWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

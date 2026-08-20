@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 
 import App from '@/App'
 import { ErrorBoundary } from '@/components/feedback/ErrorBoundary'
+import { ToastProvider } from '@/components/feedback/ToastProvider'
 import { env } from '@/config/env'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { queryClient } from '@/lib/query-client'
@@ -21,12 +22,18 @@ createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </BrowserRouter>
-        {env.isDev && <ReactQueryDevtools initialIsOpen={false} />}
+        <ToastProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </BrowserRouter>
+        </ToastProvider>
+        {/* Bottom-left: the default bottom-right corner sits on top of the
+            toast stack and swallows clicks on its dismiss button. */}
+        {env.isDev && (
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+        )}
       </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,

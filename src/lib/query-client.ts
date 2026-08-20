@@ -66,6 +66,10 @@ export const queryKeys = {
         params.offset ?? 0,
       ] as const,
   },
+  analytics: {
+    all: ['analytics'] as const,
+    dashboard: (params: object) => ['analytics', 'dashboard', JSON.stringify(params)] as const,
+  },
   activity: {
     all: ['activity'] as const,
     list: (params: {
@@ -93,17 +97,33 @@ export const queryKeys = {
  * which keys are affected, every money mutation invalidates the whole set — a
  * stale balance is exactly the kind of wrong that users notice and do not forgive.
  */
-export function invalidateLedger(groupId?: string | null) {
+export function invalidateLedger(
+  groupId?: string | null,
+  options: { refetch?: boolean } = {},
+) {
+  // `refetch: false` marks everything stale without re-requesting it. Needed when
+  // the thing being changed is being *deleted*: the page showing it is still
+  // mounted at this moment, so a refetch would ask the API for a row that no
+  // longer exists and log a 404. The queries reload when their next page mounts.
+  const refetchType = options.refetch === false ? ('none' as const) : ('active' as const)
+
   for (const key of [
-    queryKeys.expenses.all,
+    // Deliberately the list prefix, not `expenses.all`: that also covers
+    // `expenses.detail`, and refetching the detail of a just-deleted expense is
+    // exactly the 404 this avoids. Edits update the detail cache directly.
+    queryKeys.expenses.list({}).slice(0, 2) as unknown as readonly string[],
     queryKeys.balances.all,
     queryKeys.settlements.all,
     queryKeys.activity.all,
+    queryKeys.analytics.all,
   ]) {
-    void queryClient.invalidateQueries({ queryKey: key })
+    void queryClient.invalidateQueries({ queryKey: key, refetchType })
   }
 
   if (groupId) {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) })
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.groups.detail(groupId),
+      refetchType,
+    })
   }
 }

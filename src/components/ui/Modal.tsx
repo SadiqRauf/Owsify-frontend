@@ -69,7 +69,8 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'relative flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl',
+          // Bottom sheet on a phone, centred dialog from `sm` up.
+          'relative flex max-h-[92vh] w-full flex-col rounded-t-2xl bg-white shadow-xl sm:max-h-[90vh] sm:rounded-2xl',
           SIZES[size],
         )}
       >

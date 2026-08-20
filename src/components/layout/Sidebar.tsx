@@ -54,12 +54,20 @@ function NavItems({ onNavigate }: { onNavigate: () => void }) {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <>
-      {/* Desktop: always present, part of the page flow. */}
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
-        <div className="flex h-16 items-center border-b border-slate-200 px-5">
+      {/*
+        Desktop: pinned to the viewport so it stays put while the page scrolls.
+        Sticky rather than fixed, so the aside keeps its place in the flex row and
+        the main column still gets its width from the layout instead of needing a
+        matching hard-coded offset.
+      */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        <div className="flex h-16 shrink-0 items-center border-b border-slate-200 px-5">
           <Logo />
         </div>
-        <NavItems onNavigate={() => {}} />
+        {/* Scrolls internally only if the nav ever outgrows a short viewport. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <NavItems onNavigate={() => {}} />
+        </div>
       </aside>
 
       {/* Mobile: slide-over with a backdrop. */}

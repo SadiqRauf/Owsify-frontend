@@ -299,3 +299,57 @@ export interface ActivityPage {
   limit: number
   offset: number
 }
+
+// --------------------------------------------------------------------------- //
+// Analytics
+// --------------------------------------------------------------------------- //
+export interface CategorySpending {
+  category: ExpenseCategory
+  amount: string
+  /** Percentage of the window's total, 0-100. */
+  share_of_total: string
+  expense_count: number
+}
+
+export interface MonthSpending {
+  /** ISO year-month, e.g. "2026-08". */
+  month: string
+  amount: string
+  expense_count: number
+}
+
+export interface GroupRef {
+  id: string
+  name: string
+  emoji: string | null
+  currency: string
+}
+
+export interface GroupSpending {
+  group: GroupRef
+  amount: string
+}
+
+export interface GroupStatistics {
+  group: GroupRef
+  total_expenses: string
+  your_share: string
+  your_net: string
+  expense_count: number
+  member_count: number
+}
+
+export interface Dashboard {
+  window: { start: string | null; end: string | null; currency: string }
+  /** Your share of expenses in the window — what you consumed, not what you paid. */
+  total_spent: string
+  expense_count: number
+  balances: CurrencyTotals[]
+  people: PersonBalance[]
+  by_category: CategorySpending[]
+  by_month: MonthSpending[]
+  by_group: GroupSpending[]
+  groups: GroupStatistics[]
+  recent_expenses: Expense[]
+  recent_settlements: Settlement[]
+}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { queryKeys } from '@/lib/query-client'
+import { invalidateLedger, queryKeys } from '@/lib/query-client'
 import type { GroupRole } from '@/types/api'
 
 import { groupsApi, type GroupCreateInput, type GroupUpdateInput } from './api'
@@ -47,10 +47,19 @@ export function useDeleteGroup() {
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.remove(groupId),
     onSuccess: (_result, groupId) => {
-      queryClient.removeQueries({ queryKey: queryKeys.groups.detail(groupId) })
+      // Deleting a group takes its expenses with it, so the whole ledger moves —
+      // but nothing may refetch yet. This page is still mounted and its queries
+      // are scoped to the group, so `/groups/{id}`, `/balances/groups/{id}` and
+      // `/expenses?group_id={id}` would all come back 404.
+      invalidateLedger(groupId, { refetch: false })
+
+      // The group list is not group-scoped, so it is safe to refetch now.
       void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list })
-      // Deleting a group takes its expenses with it, so balances move too.
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
+
+      // Deliberately no removeQueries here. Removing a query that still has an
+      // observer makes React Query treat it as a fresh mount and refetch it —
+      // which is the 404 we are avoiding. This page unmounts a moment later and
+      // garbage collection drops the entry.
     },
   })
 }
@@ -71,9 +80,21 @@ export function useRemoveGroupMember(groupId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (userId: string) => groupsApi.removeMember(groupId, userId),
-    onSuccess: () => {
-      // Leaving your own group makes the detail query 404, so refetch rather than patch.
-      void queryClient.invalidateQueries({ queryKey: queryKeys.groups.all })
+    onSuccess: (_result, userId) => {
+      const me = queryClient.getQueryData<{ id: string }>(queryKeys.auth.me)
+      const iLeft = me?.id === userId
+
+      void queryClient.invalidateQueries({ queryKey: queryKeys.groups.list })
+      // Removing someone changes who owes what in this group — but if that
+      // someone is me, I can no longer read any of it.
+      invalidateLedger(groupId, { refetch: !iLeft })
+
+      // Leaving means everything scoped to this group would 404 from here on.
+      // The entry is left to garbage collection rather than removed: removing a
+      // query that still has an observer makes React Query refetch it.
+      if (!iLeft) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) })
+      }
     },
   })
 }

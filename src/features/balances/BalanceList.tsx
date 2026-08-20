@@ -22,10 +22,10 @@ export function PersonBalanceRow({
   const theyOweYou = cents > 0
 
   return (
-    <li className="flex items-center gap-3 py-3">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
       <Avatar name={entry.user.full_name} src={entry.user.avatar_url} size="sm" />
 
-      <p className="min-w-0 flex-1 truncate text-sm text-slate-700">
+      <p className="min-w-0 flex-1 basis-32 text-sm text-slate-700">
         {theyOweYou ? (
           <>
             <span className="font-medium text-slate-900">{entry.user.full_name}</span> owes you

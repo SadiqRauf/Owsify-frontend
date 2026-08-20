@@ -14,6 +14,8 @@ import axios, {
 } from 'axios'
 
 import { env } from '@/config/env'
+import { resolveSuccessToast } from '@/lib/mutation-toasts'
+import { emitToast } from '@/lib/toast-bus'
 import { tokenStorage } from '@/lib/token-storage'
 import type { ApiErrorBody, ApiErrorDetail, TokenPair } from '@/types/api'
 
@@ -136,7 +138,18 @@ async function refreshAccessToken(): Promise<string> {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Confirm every successful write here rather than at 24 call sites. A rule per
+    // component is a rule that gets forgotten, and a silent success looks
+    // identical to a request that never left the browser.
+    const method = response.config.method ?? ''
+    const url = response.config.url ?? ''
+    const toast = resolveSuccessToast(method, url)
+    if (toast) {
+      emitToast({ tone: 'success', title: toast.title, description: toast.description })
+    }
+    return response
+  },
   async (error: AxiosError<ApiErrorBody>) => {
     const config = error.config as RetriableConfig | undefined
     const status = error.response?.status

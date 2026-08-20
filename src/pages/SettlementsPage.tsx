@@ -84,18 +84,16 @@ export function SettlementsPage() {
         <Card
           title={`${total} payment${total === 1 ? '' : 's'}`}
           action={
-            <div className="flex items-end gap-2">
-              <div className="w-44">
-                <Select
-                  label=""
-                  options={SORTS}
-                  value={sort}
-                  onChange={(event) => {
-                    setSort(event.target.value)
-                    setOffset(0)
-                  }}
-                />
-              </div>
+            <div className="w-40 sm:w-44">
+              <Select
+                label="Sort"
+                options={SORTS}
+                value={sort}
+                onChange={(event) => {
+                  setSort(event.target.value)
+                  setOffset(0)
+                }}
+              />
             </div>
           }
         >
@@ -105,10 +103,10 @@ export function SettlementsPage() {
               const other = youPaid ? settlement.to_user : settlement.from_user
 
               return (
-                <li key={settlement.id} className="flex items-center gap-3 py-3">
+                <li key={settlement.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
                   <Avatar name={other.full_name} src={other.avatar_url} size="sm" />
 
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-40">
                     <p className="truncate text-sm font-medium text-slate-900">
                       {youPaid
                         ? `You paid ${other.full_name}`
