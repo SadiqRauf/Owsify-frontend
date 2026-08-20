@@ -66,6 +66,23 @@ export const queryKeys = {
         params.offset ?? 0,
       ] as const,
   },
+  khata: {
+    all: ['khata'] as const,
+    lists: ['khata', 'list'] as const,
+    list: (params: object) => ['khata', 'list', JSON.stringify(params)] as const,
+    detail: (khataId: string) => ['khata', 'detail', khataId] as const,
+    entries: (khataId: string, params: object) =>
+      ['khata', 'entries', khataId, JSON.stringify(params)] as const,
+    entriesFor: (khataId: string) => ['khata', 'entries', khataId] as const,
+  },
+  people: {
+    all: ['people'] as const,
+    list: (params: object) => ['people', 'list', JSON.stringify(params)] as const,
+    summary: (personId: string, params: object) =>
+      ['people', 'summary', personId, JSON.stringify(params)] as const,
+    activity: (personId: string, params: object) =>
+      ['people', 'activity', personId, JSON.stringify(params)] as const,
+  },
   analytics: {
     all: ['analytics'] as const,
     dashboard: (params: object) => ['analytics', 'dashboard', JSON.stringify(params)] as const,

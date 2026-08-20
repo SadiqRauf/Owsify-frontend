@@ -20,6 +20,20 @@ interface Rule {
   message: string | null
   description?: string
   reason?: string
+  /**
+   * For routes whose outcome depends on what was sent, not just where. Given the
+   * request's query and body, returns the message to use instead of `message`.
+   *
+   * Needed where one route does two materially different things: archiving a
+   * ledger and deleting it must not read the same, and a PATCH that archives
+   * should confirm "archived" rather than the literal truth of "updated".
+   */
+  resolve?: (request: RequestContext) => ResolvedToast
+}
+
+export interface RequestContext {
+  params: Record<string, unknown>
+  body: Record<string, unknown>
 }
 
 const UUID = '[0-9a-f-]{36}'
@@ -135,6 +149,58 @@ const RULES: Rule[] = [
     description: 'Balances have been updated.',
   },
 
+  // --- Khata --------------------------------------------------------------- //
+  { method: 'post', pattern: /\/khata$/, message: 'Khata added' },
+  // Entry rules come before the khata rules below only in intent — matching is by
+  // pattern, and `/khata/{id}/entries` cannot collide with `/khata/{id}`.
+  {
+    method: 'post',
+    pattern: new RegExp(`/khata/${UUID}/entries$`),
+    message: 'Entry added',
+    resolve: ({ body }) => {
+      if (body.entry_type === 'received') {
+        return { title: 'Payment recorded', description: 'They owe you less now.' }
+      }
+      if (body.entry_type === 'adjustment') return { title: 'Adjustment recorded' }
+      return { title: 'Entry added', description: 'They owe you more now.' }
+    },
+  },
+  {
+    method: 'patch',
+    pattern: new RegExp(`/khata/entries/${UUID}$`),
+    message: 'Entry updated',
+    description: 'The balance has been recalculated.',
+  },
+  {
+    method: 'delete',
+    pattern: new RegExp(`/khata/entries/${UUID}$`),
+    message: 'Entry deleted',
+    description: 'The balance has been recalculated.',
+  },
+  {
+    method: 'patch',
+    pattern: new RegExp(`/khata/${UUID}$`),
+    message: 'Khata updated',
+    resolve: ({ body }) => {
+      // Archiving and restoring both arrive as a PATCH, but the reader pressed a
+      // button that said Archive — confirm the thing they asked for.
+      if (body.is_archived === true) {
+        return { title: 'Khata archived', description: 'Its entries are kept.' }
+      }
+      if (body.is_archived === false) return { title: 'Khata restored' }
+      return { title: 'Khata updated' }
+    },
+  },
+  {
+    method: 'delete',
+    pattern: new RegExp(`/khata/${UUID}$`),
+    message: 'Khata archived',
+    resolve: ({ params }) =>
+      params.permanent
+        ? { title: 'Khata deleted', description: 'Its entries were removed with it.' }
+        : { title: 'Khata archived', description: 'Its entries are kept.' },
+  },
+
   // --- Settlements --------------------------------------------------------- //
   {
     method: 'post',
@@ -163,20 +229,27 @@ export interface ResolvedToast {
  * shorter ones they would otherwise be shadowed by (`/groups/{id}/members/{id}`
  * before `/groups/{id}`).
  */
-export function resolveSuccessToast(method: string, url: string): ResolvedToast | null {
+export function resolveSuccessToast(
+  method: string,
+  url: string,
+  request: Partial<RequestContext> = {},
+): ResolvedToast | null {
   const verb = method.toLowerCase() as Method
   if (!['post', 'patch', 'put', 'delete'].includes(verb)) return null
 
-  // Compare against the path only: a query string must not affect the match.
+  // Matched on the path alone, so a query string cannot affect *which* rule wins;
+  // a rule that cares about what was sent reads it through resolve() instead.
   const path = url.split('?')[0].replace(/\/+$/, '')
 
   for (const rule of RULES) {
     const methods = Array.isArray(rule.method) ? rule.method : [rule.method]
     if (!methods.includes(verb)) continue
     if (!rule.pattern.test(path)) continue
-    return rule.message === null
-      ? null
-      : { title: rule.message, description: rule.description }
+    if (rule.message === null) return null
+    if (rule.resolve) {
+      return rule.resolve({ params: request.params ?? {}, body: request.body ?? {} })
+    }
+    return { title: rule.message, description: rule.description }
   }
 
   // An unmatched write still gets acknowledged. A new endpoint should default to

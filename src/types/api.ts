@@ -362,3 +362,152 @@ export interface Dashboard {
   recent_expenses: Expense[]
   recent_settlements: Settlement[]
 }
+
+// --------------------------------------------------------------------------- //
+// Khata — a running two-party ledger
+// --------------------------------------------------------------------------- //
+/**
+ * `adjustment` is the only type whose amount may be negative — it is a correction,
+ * so it carries its own direction rather than taking one from the type.
+ */
+export type KhataEntryType = 'given' | 'received' | 'adjustment'
+
+export interface Khata {
+  id: string
+  /** The name the owner typed. */
+  person_name: string
+  /** The linked account's name when there is one, else person_name. */
+  display_name: string
+  person_phone: string | null
+  person_email: string | null
+  /** Set only when the other party has an account. */
+  person_user: User | null
+  currency: string
+  notes: string | null
+  is_archived: boolean
+  created_at: string
+  updated_at: string
+  /** Positive: they owe you. Negative: you owe them. Zero: settled. */
+  balance: string
+  entry_count: number
+  last_entry_on: string | null
+}
+
+export interface KhataCurrencyTotal {
+  currency: string
+  owed_to_you: string
+  you_owe: string
+  net: string
+  khata_count: number
+}
+
+export interface KhataListPage {
+  items: Khata[]
+  total: number
+  limit: number
+  offset: number
+  /** Per currency: rupees and dollars are never added together. */
+  totals: KhataCurrencyTotal[]
+}
+
+export interface KhataEntry {
+  id: string
+  khata_id: string
+  entry_type: KhataEntryType
+  /** Always as entered. Positive for given/received; signed for adjustments. */
+  amount: string
+  /** Effect on the balance: positive increases what they owe you. */
+  signed_amount: string
+  entry_date: string
+  description: string | null
+  created_at: string
+  updated_at: string
+  /**
+   * The balance as it stood after this entry, over the khata's whole history —
+   * so it keeps its meaning on page two and under a date filter.
+   */
+  running_balance: string
+}
+
+export interface KhataEntryTotals {
+  given: string
+  received: string
+  adjustment: string
+  balance: string
+}
+
+export interface KhataEntryListPage {
+  items: KhataEntry[]
+  total: number
+  limit: number
+  offset: number
+  currency: string
+  /** The khata's real balance, unaffected by the filters on the page. */
+  balance: string
+  totals: KhataEntryTotals
+}
+
+// --------------------------------------------------------------------------- //
+// People — one person, across groups, settlements and khatas
+// --------------------------------------------------------------------------- //
+export interface PersonBalanceBreakdown {
+  group_balance: string
+  khata_balance: string
+  /** Always "0.00" — there is no loans feature yet. Reported, not omitted. */
+  loan_balance: string
+  total_balance: string
+  /** Gross settled between you. Context only; already applied to group_balance. */
+  settled_total: string
+}
+
+export type PersonActivityKind = 'expense' | 'settlement' | 'khata_entry'
+
+export interface PersonActivityItem {
+  id: string
+  kind: PersonActivityKind
+  occurred_at: string
+  summary: string
+  amount: string
+  currency: string
+  your_impact: string
+  group_id: string | null
+  group_name: string | null
+  khata_id: string | null
+}
+
+export interface PersonSummary {
+  person: User
+  currency: string
+  balances: PersonBalanceBreakdown
+  shared_group_count: number
+  khata_count: number
+  expense_count: number
+  khata_ids: string[]
+  shared_groups: { id: string; name: string }[]
+  recent_activity: PersonActivityItem[]
+}
+
+export interface PersonActivityPage {
+  items: PersonActivityItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface PersonListItem {
+  id: string
+  name: string
+  email: string | null
+  avatar_url: string | null
+  /** Null for a khata-only contact, who has no account and so no person page. */
+  user: User | null
+  khata_id: string | null
+  currency: string
+  total_balance: string
+  has_account: boolean
+}
+
+export interface PersonListPage {
+  items: PersonListItem[]
+  total: number
+}

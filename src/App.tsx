@@ -18,6 +18,18 @@ import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute'
 const DashboardPage = lazy(() =>
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 )
+const KhataListPage = lazy(() =>
+  import('@/pages/KhataListPage').then((m) => ({ default: m.KhataListPage })),
+)
+const KhataDetailPage = lazy(() =>
+  import('@/pages/KhataDetailPage').then((m) => ({ default: m.KhataDetailPage })),
+)
+const PeopleListPage = lazy(() =>
+  import('@/pages/PeopleListPage').then((m) => ({ default: m.PeopleListPage })),
+)
+const PersonDetailPage = lazy(() =>
+  import('@/pages/PersonDetailPage').then((m) => ({ default: m.PersonDetailPage })),
+)
 const GroupsPage = lazy(() =>
   import('@/pages/GroupsPage').then((m) => ({ default: m.GroupsPage })),
 )
@@ -62,6 +74,10 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/khata" element={<KhataListPage />} />
+            <Route path="/khata/:khataId" element={<KhataDetailPage />} />
+            <Route path="/people" element={<PeopleListPage />} />
+            <Route path="/people/:personId" element={<PersonDetailPage />} />
             <Route path="/groups" element={<GroupsPage />} />
             <Route path="/groups/:groupId" element={<GroupDetailPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />

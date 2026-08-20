@@ -1,4 +1,14 @@
-import { Activity, Home, Receipt, User, Users, Wallet, type LucideIcon } from 'lucide-react'
+import {
+  Activity,
+  BookUser,
+  Home,
+  Receipt,
+  User,
+  Users,
+  UsersRound,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react'
 
 export interface NavItem {
   label: string
@@ -10,6 +20,8 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', icon: Home },
+  { label: 'Khata', to: '/khata', icon: BookUser },
+  { label: 'People', to: '/people', icon: UsersRound },
   { label: 'Groups', to: '/groups', icon: Users },
   { label: 'Expenses', to: '/expenses', icon: Receipt },
   { label: 'Settle up', to: '/settlements', icon: Wallet },

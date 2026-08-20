@@ -71,6 +71,18 @@ export class ApiError extends Error {
   }
 }
 
+/** The outgoing request body as an object, or `{}` if it was not JSON. */
+function parseRequestBody(data: unknown): Record<string, unknown> {
+  if (typeof data !== 'string') return {}
+  try {
+    const parsed = JSON.parse(data)
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
+}
+
+
 function toApiError(error: AxiosError<ApiErrorBody>): ApiError {
   if (!error.response) {
     return new ApiError(
@@ -144,7 +156,12 @@ apiClient.interceptors.response.use(
     // identical to a request that never left the browser.
     const method = response.config.method ?? ''
     const url = response.config.url ?? ''
-    const toast = resolveSuccessToast(method, url)
+    const toast = resolveSuccessToast(method, url, {
+      params: (response.config.params ?? {}) as Record<string, unknown>,
+      // axios has already serialised the body by this point; a route that needs to
+      // read it is rare enough that parsing here beats threading it through.
+      body: parseRequestBody(response.config.data),
+    })
     if (toast) {
       emitToast({ tone: 'success', title: toast.title, description: toast.description })
     }

@@ -59,6 +59,8 @@ src/
 | --- | --- |
 | `/login`, `/register` | Signed-out only; a signed-in user is sent to `/dashboard` |
 | `/dashboard` | Balance tiles, who owes whom, recent activity |
+| `/khata`, `/khata/:khataId` | Khata list, and detail with the entry ledger |
+| `/people`, `/people/:personId` | Everyone you share money with, and one person's unified total |
 | `/groups`, `/groups/:groupId` | Group list, and detail with members and expenses |
 | `/expenses`, `/expenses/:expenseId` | Paged expense list, and detail with edit/delete |
 | `/friends` | Friends, requests both ways, user search, and email invitations |
@@ -158,3 +160,41 @@ it, cropped to the measured alpha bounds rather than by eye:
 The sidebar pairs the mark with the wordmark as **text** rather than using the
 lockup: at the 32px the header allows, the lockup's tagline is unreadable, and
 scaling artwork down until its words vanish is worse than not showing them.
+
+## Khata ledger
+
+The ledger table carries a **balance-after** column per row, which the server
+computes over the khata's whole history. It therefore stays meaningful on page two
+and under a date filter, and the totals above the table describe the khata rather
+than the filtered page — a filtered view must never make an unsettled khata look
+settled.
+
+`relative` on the table's scroll container is load-bearing. The `sr-only` caption
+and column labels are absolutely positioned, and an absolutely positioned element is
+only clipped by an ancestor that is its containing block. Without it they escape the
+scroll box at the table's full width, and the whole page scrolls sideways on a
+phone.
+
+**Attachments on an entry are not built** — the app has no file storage — and the
+form says so rather than offering an input that drops what it takes.
+
+## Dates
+
+`formatDate` treats a bare `YYYY-MM-DD` as a calendar date, building it from its
+parts rather than through `new Date(string)`. The latter parses it as UTC midnight,
+which renders as the *previous day* anywhere west of Greenwich: an expense dated
+today would show as yesterday. Timestamps still parse normally — those really are
+instants. `todayIso()` is the matching local-calendar default for date inputs.
+
+## People
+
+`/people/:personId` adds one person up across group expenses, khata and loans. Every
+component is signed the same way (positive = they owe you), so the total is a plain
+sum, and all of it is scoped to one currency.
+
+**Loans are always zero — the feature does not exist yet.** The page shows the row
+and says so, because a breakdown that silently omits a component reads as "you have
+no loans" rather than "loans do not exist here".
+
+Khata contacts with no account appear on `/people` marked *Khata only* and link to
+their khata: `/people/:id` is keyed by user id, so they cannot have a person page.
