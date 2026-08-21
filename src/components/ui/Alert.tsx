@@ -1,12 +1,15 @@
-import { AlertCircle, CheckCircle2, Info, type LucideIcon } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-type Tone = 'error' | 'success' | 'info'
+type Tone = 'error' | 'warning' | 'success' | 'info'
 
 const TONES: Record<Tone, { className: string; Icon: LucideIcon }> = {
   error: { className: 'bg-red-50 text-red-800 ring-red-200', Icon: AlertCircle },
+  // Distinct from `error`: a written-off loan or an archived khata is a state to
+  // be aware of, not something that went wrong.
+  warning: { className: 'bg-amber-50 text-amber-900 ring-amber-200', Icon: AlertTriangle },
   success: { className: 'bg-emerald-50 text-emerald-800 ring-emerald-200', Icon: CheckCircle2 },
   info: { className: 'bg-blue-50 text-blue-800 ring-blue-200', Icon: Info },
 }
