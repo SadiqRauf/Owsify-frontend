@@ -201,6 +201,83 @@ const RULES: Rule[] = [
         : { title: 'Khata archived', description: 'Its entries are kept.' },
   },
 
+  // --- Loans --------------------------------------------------------------- //
+  {
+    method: 'post',
+    pattern: /\/loans$/,
+    message: 'Loan recorded',
+    resolve: ({ body }) =>
+      body.direction === 'taken'
+        ? { title: 'Loan recorded', description: 'You owe them this.' }
+        : { title: 'Loan recorded', description: 'They owe you this.' },
+  },
+  {
+    method: 'post',
+    pattern: new RegExp(`/loans/${UUID}/payments$`),
+    message: 'Payment recorded',
+    description: 'The remaining amount has been recalculated.',
+  },
+  {
+    method: 'post',
+    pattern: new RegExp(`/loans/${UUID}/settle$`),
+    message: 'Loan marked as paid',
+    description: 'The closing payment was added to its history.',
+  },
+  {
+    method: 'patch',
+    pattern: new RegExp(`/loans/${UUID}$`),
+    message: 'Loan updated',
+    resolve: ({ body }) => {
+      // Write-off and reopen both arrive as a PATCH, but the reader pressed a
+      // button that said one or the other — confirm what they asked for.
+      if (body.status === 'cancelled') {
+        return { title: 'Loan written off', description: 'Its payments are kept.' }
+      }
+      if (body.status) return { title: 'Loan reopened' }
+      return { title: 'Loan updated' }
+    },
+  },
+  {
+    method: 'delete',
+    pattern: new RegExp(`/loans/${UUID}$`),
+    message: 'Loan written off',
+    resolve: ({ params }) =>
+      params.permanent
+        ? { title: 'Loan deleted', description: 'Its payments were removed with it.' }
+        : { title: 'Loan written off', description: 'Its payments are kept.' },
+  },
+  {
+    method: 'patch',
+    pattern: new RegExp(`/loans/payments/${UUID}$`),
+    message: 'Payment updated',
+    description: 'The remaining amount has been recalculated.',
+  },
+  {
+    method: 'delete',
+    pattern: new RegExp(`/loans/payments/${UUID}$`),
+    message: 'Payment deleted',
+    description: 'That amount is back on the loan.',
+  },
+
+  // --- Notes and reminders --------------------------------------------------- //
+  { method: 'post', pattern: /\/notes$/, message: 'Note added' },
+  { method: 'patch', pattern: new RegExp(`/notes/${UUID}$`), message: 'Note updated' },
+  { method: 'delete', pattern: new RegExp(`/notes/${UUID}$`), message: 'Note deleted' },
+  { method: 'post', pattern: /\/reminders$/, message: 'Reminder set' },
+  {
+    method: 'patch',
+    pattern: new RegExp(`/reminders/${UUID}$`),
+    message: 'Reminder updated',
+    resolve: ({ body }) => {
+      // Completing and reopening both arrive as a PATCH; confirm the thing the
+      // reader actually pressed.
+      if (body.completed === true) return { title: 'Reminder completed' }
+      if (body.completed === false) return { title: 'Reminder reopened' }
+      return { title: 'Reminder updated' }
+    },
+  },
+  { method: 'delete', pattern: new RegExp(`/reminders/${UUID}$`), message: 'Reminder deleted' },
+
   // --- Settlements --------------------------------------------------------- //
   {
     method: 'post',

@@ -1,8 +1,9 @@
 import { X } from 'lucide-react'
+import { useId } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import { Logo } from '@/components/layout/Logo'
-import { NAV_ITEMS } from '@/components/layout/navigation'
+import { NAV_SECTIONS, type NavSection } from '@/components/layout/navigation'
 import { cn } from '@/lib/utils'
 
 interface SidebarProps {
@@ -13,41 +14,78 @@ interface SidebarProps {
 
 function NavItems({ onNavigate }: { onNavigate: () => void }) {
   return (
-    <nav aria-label="Main" className="flex-1 space-y-1 px-3 py-4">
-      {NAV_ITEMS.map(({ label, to, icon: Icon, comingSoon }) =>
-        comingSoon ? (
-          <span
-            key={label}
-            aria-disabled
-            title="Coming soon"
-            className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400"
-          >
-            <Icon aria-hidden className="size-4.5" />
-            {label}
-            <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-              Soon
-            </span>
-          </span>
-        ) : (
-          <NavLink
-            key={label}
-            to={to}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-              )
-            }
-          >
-            <Icon aria-hidden className="size-4.5" />
-            {label}
-          </NavLink>
-        ),
-      )}
+    <nav aria-label="Main" className="flex-1 px-3 py-4">
+      {NAV_SECTIONS.map((section, index) => (
+        <NavGroup
+          key={section.title ?? 'top'}
+          section={section}
+          onNavigate={onNavigate}
+          isFirst={index === 0}
+        />
+      ))}
     </nav>
+  )
+}
+
+function NavGroup({
+  section,
+  onNavigate,
+  isFirst,
+}: {
+  section: NavSection
+  onNavigate: () => void
+  isFirst: boolean
+}) {
+  // The heading id ties the list to its label for a screen reader, so the grouping
+  // is not something only a sighted reader gets.
+  const headingId = useId()
+
+  return (
+    <div className={cn(!isFirst && 'mt-5')}>
+      {section.title && (
+        <h2
+          id={headingId}
+          className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+        >
+          {section.title}
+        </h2>
+      )}
+      <ul aria-labelledby={section.title ? headingId : undefined} className="space-y-1">
+        {section.items.map(({ label, to, icon: Icon, comingSoon }) => (
+          <li key={label}>
+            {comingSoon ? (
+              <span
+                aria-disabled
+                title="Coming soon"
+                className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400"
+              >
+                <Icon aria-hidden className="size-4.5" />
+                {label}
+                <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                  Soon
+                </span>
+              </span>
+            ) : (
+              <NavLink
+                to={to}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                  )
+                }
+              >
+                <Icon aria-hidden className="size-4.5" />
+                {label}
+              </NavLink>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -105,7 +143,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <X aria-hidden className="size-5" />
             </button>
           </div>
-          <NavItems onNavigate={onClose} />
+          {/* Scrolls internally, like the desktop aside: with the headings the
+              nav is taller than a short phone's viewport. */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <NavItems onNavigate={onClose} />
+          </div>
         </aside>
       </div>
     </>

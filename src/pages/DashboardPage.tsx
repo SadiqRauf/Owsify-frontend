@@ -364,8 +364,14 @@ export function DashboardPage() {
 
           {data && data.groups.length > 0 && (
             <Card title="Group statistics" description="Totals and your position in each.">
-              <div className="overflow-x-auto">
+              {/* `relative` so the sr-only caption, which is absolutely
+                  positioned, is clipped by this box rather than escaping it and
+                  dragging the page sideways. */}
+              <div className="relative max-w-full overflow-x-auto">
                 <table className="w-full text-sm">
+                  <caption className="sr-only">
+                    Each group&rsquo;s total spend and your share of it.
+                  </caption>
                   <thead>
                     <tr className="border-b border-slate-200 text-left text-slate-500">
                       <th scope="col" className="pb-2 font-medium">Group</th>

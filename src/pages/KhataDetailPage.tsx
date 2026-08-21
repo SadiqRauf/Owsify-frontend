@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Mail,
   Pencil,
+  Plus,
   Phone,
   Trash2,
 } from 'lucide-react'
@@ -20,6 +21,10 @@ import { Card } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { KhataFormModal } from '@/features/khata/KhataFormModal'
 import { KhataLedger } from '@/features/khata/KhataLedger'
+import { NotesSection } from '@/features/notes/NotesSection'
+import { ReminderList } from '@/features/notes/ReminderList'
+import { ReminderModal } from '@/features/notes/ReminderModal'
+import { useReminders } from '@/features/notes/queries'
 import { useDeleteKhata, useKhata, useUpdateKhata } from '@/features/khata/queries'
 import { formatAbsMoney, formatMoney, toCents } from '@/lib/money'
 import { cn, formatDate } from '@/lib/utils'
@@ -32,7 +37,10 @@ export function KhataDetailPage() {
   const updateKhata = useUpdateKhata(khataId ?? '')
   const deleteKhata = useDeleteKhata()
 
+  const { data: reminders } = useReminders({ khata_id: khataId, limit: 20 })
+
   const [isEditOpen, setEditOpen] = useState(false)
+  const [isReminderOpen, setReminderOpen] = useState(false)
   const [isDeleteOpen, setDeleteOpen] = useState(false)
 
   if (isLoading) return <CardSkeleton lines={6} />
@@ -177,6 +185,41 @@ export function KhataDetailPage() {
         khataId={khata.id}
         currency={khata.currency}
         personName={khata.display_name}
+      />
+
+      <Card
+        title="Reminders"
+        description="When to chase this khata."
+        action={
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setReminderOpen(true)}
+            leftIcon={<Plus className="size-4" />}
+            className="whitespace-nowrap"
+          >
+            Add reminder
+          </Button>
+        }
+      >
+        <ReminderList
+          reminders={reminders?.items ?? []}
+          emptyTitle="No reminders on this khata"
+          emptyDescription="Add one to be told when a payment is due."
+        />
+      </Card>
+
+      <NotesSection
+        subject={{ khata_id: khata.id }}
+        description={`What was agreed with ${khata.display_name}.`}
+      />
+
+      <ReminderModal
+        isOpen={isReminderOpen}
+        onClose={() => setReminderOpen(false)}
+        subject={{ khata_id: khata.id }}
+        subjectLabel={khata.display_name}
+        defaultCurrency={khata.currency}
       />
 
       <KhataFormModal

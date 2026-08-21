@@ -1,31 +1,56 @@
 import {
   ArrowLeft,
-  ArrowDownLeft,
-  ArrowUpRight,
   BookOpen,
   HandCoins,
   Receipt,
+  Plus,
   Scale,
   Users,
 } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { EmptyState } from '@/components/feedback/EmptyState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { CardSkeleton } from '@/components/feedback/Skeleton'
-import { Alert } from '@/components/ui/Alert'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { usePersonActivity, usePersonSummary } from '@/features/people/queries'
+import { NotesSection } from '@/features/notes/NotesSection'
+import { ReminderList } from '@/features/notes/ReminderList'
+import { ReminderModal } from '@/features/notes/ReminderModal'
+import { Timeline } from '@/features/notes/Timeline'
+import { usePersonTimeline, useReminders } from '@/features/notes/queries'
+import { usePersonSummary } from '@/features/people/queries'
 import { formatAbsMoney, formatMoney, toCents } from '@/lib/money'
-import { cn, formatDate } from '@/lib/utils'
-import type { PersonActivityItem } from '@/types/api'
+import { cn } from '@/lib/utils'
 
 export function PersonDetailPage() {
   const { personId } = useParams<{ personId: string }>()
 
-  const { data, isLoading, isError, error, refetch } = usePersonSummary(personId)
-  const { data: activity } = usePersonActivity(personId, { limit: 25 })
+  // Null until the first response says which currencies this pair actually uses.
+  // Defaulting straight to the viewer's profile currency lets the page announce
+  // "Settled up" for someone who owes a fortune in another one — a false statement,
+  // not just an empty view.
+  const [chosenCurrency, setChosenCurrency] = useState<string | null>(null)
+
+  const probe = usePersonSummary(personId)
+  const available = probe.data?.available_currencies ?? []
+  const preferred =
+    chosenCurrency ??
+    (available.length > 0 && !available.includes(probe.data?.currency ?? '')
+      ? available[0]
+      : undefined)
+
+  const { data, isLoading, isError, error, refetch } = usePersonSummary(
+    personId,
+    preferred,
+  )
+  const { data: timeline, isLoading: isTimelineLoading } = usePersonTimeline(personId, {
+    limit: 50,
+  })
+  const { data: reminders } = useReminders({ person_user_id: personId, limit: 20 })
+
+  const [isReminderOpen, setReminderOpen] = useState(false)
 
   if (isLoading) return <CardSkeleton lines={8} />
   if (isError || !data) {
@@ -84,6 +109,30 @@ export function PersonDetailPage() {
       <Card
         title="Where it comes from"
         description={`Each part is signed the same way, so the total is their sum. Amounts in ${currency} only.`}
+        action={
+          // More than one currency between you means one figure cannot tell the
+          // whole story, so the others are one click away rather than invisible.
+          available.length > 1 ? (
+            <div className="flex flex-wrap gap-1">
+              {available.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setChosenCurrency(code)}
+                  aria-pressed={code === currency}
+                  className={cn(
+                    'rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                    code === currency
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                  )}
+                >
+                  {code}
+                </button>
+              ))}
+            </div>
+          ) : undefined
+        }
       >
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Component
@@ -110,8 +159,12 @@ export function PersonDetailPage() {
             label="Loans"
             value={balances.loan_balance}
             currency={currency}
-            note="Not built yet"
-            muted
+            note={
+              data.loan_count === 0
+                ? 'No open loans'
+                : `${data.loan_count} open loan${data.loan_count === 1 ? '' : 's'}`
+            }
+            to={data.loan_count > 0 ? `/loans?borrower=${data.person.id}` : undefined}
           />
           <Component
             icon={Scale}
@@ -122,17 +175,6 @@ export function PersonDetailPage() {
             muted
           />
         </dl>
-
-        {/*
-          Stated on the page, not just in the API docs: a breakdown that silently
-          reports a component the app cannot compute would read as "you have no
-          loans" rather than "loans do not exist here".
-        */}
-        <Alert tone="info" className="mt-4">
-          There is no loans feature in Owsify yet, so <strong>Loans</strong> is always zero
-          and contributes nothing to the total. It is shown so the breakdown is visibly
-          complete rather than quietly missing a part.
-        </Alert>
 
         {data.shared_groups.length > 0 && (
           <div className="mt-4 border-t border-slate-100 pt-4">
@@ -157,23 +199,57 @@ export function PersonDetailPage() {
       </Card>
 
       <Card
-        title="Activity"
-        description="Expenses, settlements and khata entries between you, newest first."
+        title="Reminders"
+        description="What to chase with this person."
+        action={
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setReminderOpen(true)}
+            leftIcon={<Plus className="size-4" />}
+            className="whitespace-nowrap"
+          >
+            Add reminder
+          </Button>
+        }
       >
-        {!activity || activity.items.length === 0 ? (
-          <EmptyState
-            icon={Receipt}
-            title="Nothing between you yet"
-            description={`Add ${data.person.full_name} to an expense or open a khata for them.`}
-          />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {activity.items.map((item) => (
-              <ActivityRow key={`${item.kind}-${item.id}`} item={item} />
-            ))}
-          </ul>
-        )}
+        <ReminderList
+          reminders={reminders?.items ?? []}
+          emptyTitle="No reminders for them"
+          emptyDescription="Add one to be told when a payment is due."
+        />
       </Card>
+
+      <NotesSection
+        subject={{ person_user_id: data.person.id }}
+        description={`Context about ${data.person.full_name} that a number cannot carry.`}
+      />
+
+      {/*
+        The timeline replaces the flat activity list. Both showed the same events,
+        but the timeline orders by the date each thing happened rather than when it
+        was typed in, groups by day, and includes loans and notes — which is what
+        makes it read as a history rather than a log.
+      */}
+      <Card
+        title="Timeline"
+        description="Everything between you, in the order it happened."
+      >
+        <Timeline
+          items={timeline?.items}
+          isLoading={isTimelineLoading}
+          emptyDescription={`Add ${data.person.full_name} to an expense, open a khata, or give them a loan.`}
+        />
+      </Card>
+      {personId && (
+        <ReminderModal
+          isOpen={isReminderOpen}
+          onClose={() => setReminderOpen(false)}
+          subject={{ person_user_id: personId }}
+          subjectLabel={data.person.full_name}
+          defaultCurrency={currency}
+        />
+      )}
     </div>
   )
 }
@@ -225,46 +301,4 @@ function Component({
   )
 
   return to ? <Link to={to}>{body}</Link> : body
-}
-
-function ActivityRow({ item }: { item: PersonActivityItem }) {
-  const impact = toCents(item.your_impact)
-  const Icon = impact >= 0 ? ArrowUpRight : ArrowDownLeft
-
-  return (
-    <li className="flex items-center gap-3 py-3">
-      <span
-        className={cn(
-          'rounded-md p-1.5',
-          impact >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700',
-        )}
-      >
-        <Icon aria-hidden className="size-4" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-slate-900">{item.summary}</p>
-        <p className="text-xs text-slate-500">
-          {formatDate(item.occurred_at)}
-          {item.group_name && ` · ${item.group_name}`}
-          {item.kind === 'khata_entry' && ' · Khata'}
-        </p>
-      </div>
-      <div className="text-right">
-        <p
-          className={cn(
-            'text-sm font-medium tabular-nums',
-            impact >= 0 ? 'text-emerald-600' : 'text-red-600',
-          )}
-        >
-          {impact >= 0 ? '+' : '−'}
-          {formatAbsMoney(item.your_impact, item.currency)}
-        </p>
-        {item.khata_id && (
-          <Link to={`/khata/${item.khata_id}`} className="text-xs text-slate-400 hover:text-slate-700">
-            View khata
-          </Link>
-        )}
-      </div>
-    </li>
-  )
 }

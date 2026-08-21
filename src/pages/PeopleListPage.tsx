@@ -87,9 +87,12 @@ export function PeopleListPage() {
       )}
 
       {people.length > 0 && (
+        // min-w-0 for the same reason as the loan list: a grid item will not
+        // shrink below its content's min-content width, and a long name beside a
+        // nowrap balance then drags the whole page sideways on a phone.
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {people.map((person) => (
-            <li key={person.id}>
+            <li key={person.id} className="min-w-0">
               <PersonRow person={person} />
             </li>
           ))}

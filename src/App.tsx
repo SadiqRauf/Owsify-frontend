@@ -24,6 +24,18 @@ const KhataListPage = lazy(() =>
 const KhataDetailPage = lazy(() =>
   import('@/pages/KhataDetailPage').then((m) => ({ default: m.KhataDetailPage })),
 )
+const LoansListPage = lazy(() =>
+  import('@/pages/LoansListPage').then((m) => ({ default: m.LoansListPage })),
+)
+const LoanDetailPage = lazy(() =>
+  import('@/pages/LoanDetailPage').then((m) => ({ default: m.LoanDetailPage })),
+)
+const ReportsPage = lazy(() =>
+  import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
+)
+const RemindersPage = lazy(() =>
+  import('@/pages/RemindersPage').then((m) => ({ default: m.RemindersPage })),
+)
 const PeopleListPage = lazy(() =>
   import('@/pages/PeopleListPage').then((m) => ({ default: m.PeopleListPage })),
 )
@@ -76,6 +88,10 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/khata" element={<KhataListPage />} />
             <Route path="/khata/:khataId" element={<KhataDetailPage />} />
+            <Route path="/loans" element={<LoansListPage />} />
+            <Route path="/loans/:loanId" element={<LoanDetailPage />} />
+            <Route path="/reminders" element={<RemindersPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/people" element={<PeopleListPage />} />
             <Route path="/people/:personId" element={<PersonDetailPage />} />
             <Route path="/groups" element={<GroupsPage />} />
