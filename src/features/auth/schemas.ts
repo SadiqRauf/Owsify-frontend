@@ -62,3 +62,21 @@ export type LoginValues = z.infer<typeof loginSchema>
 export type RegisterValues = z.infer<typeof registerSchema>
 export type ProfileValues = z.infer<typeof profileSchema>
 export type PasswordChangeValues = z.infer<typeof passwordChangeSchema>
+
+/**
+ * Choosing a new password from a reset link.
+ *
+ * Reuses the same `password` rules as registration — a reset must not be a way to
+ * set a password the sign-up form would have rejected.
+ */
+export const resetPasswordSchema = z
+  .object({
+    new_password: password,
+    confirm_password: z.string().min(1, 'Confirm your new password.'),
+  })
+  .refine((values) => values.new_password === values.confirm_password, {
+    message: 'Passwords do not match.',
+    path: ['confirm_password'],
+  })
+
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>

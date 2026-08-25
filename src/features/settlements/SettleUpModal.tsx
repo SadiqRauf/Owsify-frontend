@@ -81,6 +81,14 @@ export function SettleUpModal({
     [candidates, user?.id],
   )
 
+  // A preselection that is not in the list would leave the <select> showing its
+  // first option while the form held the absent id, so a submit would record a
+  // payment against the wrong person. Fall back to the first option instead.
+  const initialCounterpartyId =
+    defaultCounterpartyId && others.some((person) => person.id === defaultCounterpartyId)
+      ? defaultCounterpartyId
+      : (others[0]?.id ?? '')
+
   const {
     register,
     control,
@@ -91,7 +99,7 @@ export function SettleUpModal({
   } = useForm<SettlementValues>({
     resolver: zodResolver(settlementSchema),
     defaultValues: {
-      counterparty_id: defaultCounterpartyId ?? others[0]?.id ?? '',
+      counterparty_id: initialCounterpartyId,
       direction: 'you_paid',
       amount: '',
       currency,
@@ -117,7 +125,7 @@ export function SettleUpModal({
   useEffect(() => {
     if (!isOpen) return
     reset({
-      counterparty_id: defaultCounterpartyId ?? others[0]?.id ?? '',
+      counterparty_id: initialCounterpartyId,
       direction: 'you_paid',
       amount: '',
       currency,
@@ -125,7 +133,7 @@ export function SettleUpModal({
       method: 'cash',
       notes: '',
     })
-  }, [isOpen, defaultCounterpartyId, others, currency, reset])
+  }, [isOpen, initialCounterpartyId, currency, reset])
 
   const counterparty = others.find((person) => person.id === counterpartyId)
   const youPaid = direction === 'you_paid'

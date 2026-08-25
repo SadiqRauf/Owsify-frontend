@@ -37,6 +37,13 @@ export interface ApiErrorBody {
   request_id: string | null
 }
 
+/** What a reset page learns about a link before asking for a new password. */
+export interface ResetTokenCheck {
+  valid: boolean
+  /** Only present for a link that is already valid. */
+  email: string | null
+}
+
 export interface MessageResponse {
   message: string
 }
