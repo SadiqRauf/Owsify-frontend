@@ -15,6 +15,12 @@ import { PublicOnlyRoute } from '@/routes/PublicOnlyRoute'
  * sees, and putting a loading spinner in front of a login form to save bytes is
  * a bad trade. Everything behind auth is fetched while the session resolves.
  */
+const ForgotPasswordPage = lazy(() =>
+  import('@/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+)
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+)
 const DashboardPage = lazy(() =>
   import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 )
@@ -80,7 +86,16 @@ export default function App() {
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
+
+        {/*
+          Reachable signed in or out, unlike the other auth pages. Someone who still
+          has a live session on this device may be resetting precisely because they
+          think someone else has one too — bouncing them to the dashboard would put
+          the guard in the way of the recovery it exists to protect.
+        */}
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Signed-in only */}
         <Route element={<ProtectedRoute />}>

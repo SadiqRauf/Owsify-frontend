@@ -1,4 +1,9 @@
 node_modules
 dist
-.env.local
 .git
+
+# Vite reads .env files during `npm run build`, so a local one copied into the
+# build stage would silently override the VITE_API_URL build arg.
+.env
+.env.*
+!.env.example

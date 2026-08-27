@@ -83,6 +83,17 @@ export function LoginPage() {
           {...register('password')}
         />
 
+        {/* Directly under the password field, where someone realises they have
+            forgotten it — not hidden below the submit button. */}
+        <div className="flex justify-end">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            Forgot your password?
+          </Link>
+        </div>
+
         <Button type="submit" fullWidth size="lg" isLoading={isSubmitting}>
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </Button>

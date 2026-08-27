@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api-client'
 import { tokenStorage } from '@/lib/token-storage'
-import type { AuthResponse, MessageResponse, User } from '@/types/api'
+import type { AuthResponse, MessageResponse, ResetTokenCheck, User } from '@/types/api'
 
 import type {
   LoginValues,
@@ -22,6 +22,34 @@ export const authApi = {
 
   async login(values: LoginValues): Promise<AuthResponse> {
     const { data } = await apiClient.post<AuthResponse>('/auth/login', values)
+    return data
+  },
+
+  /**
+   * Always resolves, whatever the address. The server answers identically for a
+   * known and an unknown account so the form cannot be used to discover who has
+   * one — which means the UI must not branch on the response either.
+   */
+  async forgotPassword(email: string): Promise<MessageResponse> {
+    const { data } = await apiClient.post<MessageResponse>('/auth/forgot-password', {
+      email,
+    })
+    return data
+  },
+
+  /** Checks a reset link without consuming it, so the page can fail early. */
+  async checkResetToken(token: string): Promise<ResetTokenCheck> {
+    const { data } = await apiClient.get<ResetTokenCheck>('/auth/reset-password', {
+      params: { token },
+    })
+    return data
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<MessageResponse> {
+    const { data } = await apiClient.post<MessageResponse>('/auth/reset-password', {
+      token,
+      new_password: newPassword,
+    })
     return data
   },
 

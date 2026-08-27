@@ -27,6 +27,7 @@ import {
   type ExpenseCategory,
   type Granularity,
   type PersonBalance,
+  type User,
 } from '@/types/api'
 
 /** Named windows rather than two date pickers — this is how people actually think. */
@@ -128,6 +129,22 @@ export function DashboardPage() {
     value: Number(row.amount),
   }))
 
+  // Everyone you could settle with: your friends, plus anyone you already share a
+  // balance with. The second half matters because a group-mate need not be a
+  // friend, and picking such a person from "Who owes whom" must not fall through
+  // to whoever happens to be first in the list.
+  const settleCandidates = useMemo(() => {
+    const byId = new Map<string, User>()
+    if (user) byId.set(user.id, user)
+    for (const friend of friends ?? []) byId.set(friend.user.id, friend.user)
+    for (const entry of data?.people ?? []) byId.set(entry.user.id, entry.user)
+    return [...byId.values()]
+  }, [user, friends, data?.people])
+
+  // The modal drops you from its own list, so "somebody to settle with" means at
+  // least one candidate who is not you.
+  const hasSettleTargets = settleCandidates.some((person) => person.id !== user?.id)
+
   const groupData: BarDatum[] = (data?.by_group ?? []).map((row) => ({
     key: row.group.id,
     label: row.group.name,
@@ -177,8 +194,8 @@ export function DashboardPage() {
               setSettleOpen(true)
             }}
             leftIcon={<HandCoins className="size-4" />}
-            disabled={(friends?.length ?? 0) === 0}
-            title={(friends?.length ?? 0) === 0 ? 'Add a friend first' : undefined}
+            disabled={!hasSettleTargets}
+            title={hasSettleTargets ? undefined : 'Add a friend first'}
           >
             Settle up
           </Button>
@@ -460,7 +477,7 @@ export function DashboardPage() {
       <SettleUpModal
         isOpen={isSettleOpen}
         onClose={() => setSettleOpen(false)}
-        candidates={[...(user ? [user] : []), ...(friends?.map((friend) => friend.user) ?? [])]}
+        candidates={settleCandidates}
         currency={settleWith?.currency ?? currency}
         defaultCounterpartyId={settleWith?.user.id}
       />
