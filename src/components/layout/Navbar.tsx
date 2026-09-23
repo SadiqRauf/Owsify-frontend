@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { Avatar } from '@/components/ui/Avatar'
 import { useAuth } from '@/features/auth/use-auth'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 
 export function Navbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
   const { user, logout } = useAuth()
@@ -53,7 +54,11 @@ export function Navbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         <Menu aria-hidden className="size-5" />
       </button>
 
-      <div className="ml-auto" ref={menuRef}>
+      <div className="ml-auto">
+        <NotificationBell />
+      </div>
+
+      <div ref={menuRef}>
         <div className="relative">
           <button
             type="button"
