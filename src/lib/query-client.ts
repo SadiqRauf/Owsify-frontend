@@ -92,6 +92,11 @@ export const queryKeys = {
     all: ['reminders'] as const,
     list: (params: object) => ['reminders', 'list', JSON.stringify(params)] as const,
   },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (params: object) => ['notifications', 'list', JSON.stringify(params)] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
+  },
   people: {
     all: ['people'] as const,
     list: (params: object) => ['people', 'list', JSON.stringify(params)] as const,

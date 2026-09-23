@@ -837,3 +837,47 @@ export interface ActivityReport {
   granularity: 'daily' | 'monthly'
   points: ActivityPoint[]
 }
+
+export type NotificationType =
+  | 'expense_added'
+  | 'expense_updated'
+  | 'expense_deleted'
+  | 'settlement_recorded'
+  | 'settlement_updated'
+  | 'settlement_deleted'
+  | 'friend_request'
+  | 'friend_accepted'
+  | 'group_added'
+  | 'group_removed'
+  | 'group_role_changed'
+  | 'group_ownership_transferred'
+  | 'group_deleted'
+  | 'invitation_accepted'
+
+export interface AppNotification {
+  id: string
+  type: NotificationType
+  /** Null if the account of whoever caused it is gone. */
+  actor: User | null
+  /** Rendered by the server, ready to show as-is. */
+  message: string
+  /** Where tapping it leads in this app, or null if nowhere. */
+  href: string | null
+  data: Record<string, unknown>
+  is_read: boolean
+  read_at: string | null
+  created_at: string
+}
+
+export interface NotificationListPage {
+  items: AppNotification[]
+  total: number
+  limit: number
+  offset: number
+  /** Across all notifications, unaffected by the filter. */
+  unread_count: number
+}
+
+export interface UnreadCount {
+  count: number
+}

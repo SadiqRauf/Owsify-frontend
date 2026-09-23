@@ -66,6 +66,9 @@ const SettlementsPage = lazy(() =>
 const ActivityPage = lazy(() =>
   import('@/pages/ActivityPage').then((m) => ({ default: m.ActivityPage })),
 )
+const NotificationsPage = lazy(() =>
+  import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
+)
 const FriendsPage = lazy(() =>
   import('@/pages/FriendsPage').then((m) => ({ default: m.FriendsPage })),
 )
@@ -116,6 +119,7 @@ export default function App() {
             <Route path="/settlements" element={<SettlementsPage />} />
             <Route path="/activity" element={<ActivityPage />} />
             <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
